@@ -203,7 +203,7 @@ def rekomendasi_text(pred_class, pred_conf, input_valid=True):
         "Hasil menunjukkan indikasi yang belum meyakinkan. Pantau kondisi kulit "
         "dan pertimbangkan pemeriksaan ke fasilitas kesehatan jika terdapat perubahan."
     )
-    def buat_hasil_invalid(filename, alasan):
+   def buat_hasil_invalid(filename, alasan):
     return {
         "filename": filename,
         "class": "Input Foto Tidak Valid",
@@ -213,15 +213,13 @@ def rekomendasi_text(pred_class, pred_conf, input_valid=True):
         "tier_label": "Tidak Dapat Dianalisis",
         "tier_class": "badge-sedang",
         "rekomendasi": (
-            "Foto tidak dapat dianalisis karena bukan merupakan foto area kulit "
-            "yang sesuai. Silakan unggah foto close-up area kulit yang ingin diperiksa."
+            "Foto tidak dapat dianalisis karena bukan merupakan "
+            "foto area kulit yang sesuai."
         ),
         "alasan": alasan,
         "date": datetime.now().strftime("%d %b %Y, %H:%M"),
         "input_valid": False
     }
-
-
 # =========================================================
 # RIWAYAT (baca/tulis riwayat.json)
 # =========================================================

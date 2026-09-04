@@ -361,13 +361,22 @@ def halaman_scan():
             img_input = Image.open(uploaded_file)
             filename = uploaded_file.name
 
-    def halaman_scan():
-
+ def halaman_scan():
     st.markdown("### 📷 Scan Kulit")
     st.caption("Deteksi tanda-tanda kusta dengan AI")
 
     if "scan_mode" not in st.session_state:
         st.session_state.scan_mode = "Buka Kamera"
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        if st.button("📷 Buka Kamera"):
+            st.session_state.scan_mode = "Buka Kamera"
+
+    with c2:
+        if st.button("🖼️ Dari Galeri"):
+            st.session_state.scan_mode = "Dari Galeri"
 
     # =====================================================
     # PILIH MODE

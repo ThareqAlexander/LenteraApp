@@ -117,9 +117,7 @@ def predict_image(pil_img, model):
 # =========================================================
 MIN_SKIN_RATIO = 0.12  # minimal 12% piksel harus terdeteksi sebagai warna kulit
 
-_face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
+_face_cascade = cv2.CascadeClassifier("assets/haarcascade_frontalface_default.xml")
 
 
 def hitung_rasio_kulit(cv_img):

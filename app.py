@@ -44,11 +44,18 @@ st.set_page_config(page_title="Lentera", page_icon="🩺", layout="centered")
 st.markdown("""
 <style>
     .block-container {
-        max-width: 430px;
-        padding-top: 1rem;
-        padding-bottom: 6rem;
-        margin: auto;
-    }
+    max-width: 430px;
+    padding-top: 2.5rem !important;
+    padding-bottom: 6rem;
+    margin: auto;
+}
+header[data-testid="stHeader"] {
+    height: 0rem;
+}
+
+div[data-testid="stAppViewContainer"] {
+    padding-top: 0rem;
+}
     .lentera-header {
         background: linear-gradient(135deg, #3b5fe2, #5b7cf0);
         border-radius: 18px;
@@ -172,12 +179,47 @@ def keyakinan_tier(pred_conf):
     return "Keyakinan Rendah", "badge-rendah"
 
 
-def rekomendasi_text(pred_class, pred_conf):
+def rekomendasi_text(pred_class, pred_conf, input_valid=True):
+    if not input_valid:
+        return (
+            "Foto tidak dapat dianalisis karena bukan merupakan foto area kulit "
+            "yang sesuai. Silakan unggah foto close-up bagian kulit yang ingin diperiksa."
+        )
+
     if pred_class == "Bukan kusta":
-        return "Tidak ditemukan tanda-tanda kusta yang signifikan. Tetap jaga kebersihan kulit dan periksa ulang jika muncul perubahan."
+        return (
+            "Tidak ditemukan tanda-tanda kusta yang signifikan pada foto yang dianalisis. "
+            "Tetap jaga kebersihan kulit dan periksa ke fasilitas kesehatan jika muncul "
+            "perubahan pada kulit."
+        )
+
     if pred_conf >= THRESHOLD:
-        return "Terdapat indikasi kuat. Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat untuk pemeriksaan lebih lanjut."
-    return "Terdapat indikasi ringan. Pantau kondisi kulit selama 2-4 minggu. Kunjungi Puskesmas jika ada perubahan."
+        return (
+            "Terdapat indikasi yang perlu diperhatikan. Segera kunjungi Puskesmas "
+            "atau fasilitas kesehatan terdekat untuk pemeriksaan lebih lanjut."
+        )
+
+    return (
+        "Hasil menunjukkan indikasi yang belum meyakinkan. Pantau kondisi kulit "
+        "dan pertimbangkan pemeriksaan ke fasilitas kesehatan jika terdapat perubahan."
+    )
+    def buat_hasil_invalid(filename, alasan):
+    return {
+        "filename": filename,
+        "class": "Input Foto Tidak Valid",
+        "confidence": 0,
+        "label": "Input Tidak Valid",
+        "badge_class": "badge-sedang",
+        "tier_label": "Tidak Dapat Dianalisis",
+        "tier_class": "badge-sedang",
+        "rekomendasi": (
+            "Foto tidak dapat dianalisis karena bukan merupakan foto area kulit "
+            "yang sesuai. Silakan unggah foto close-up area kulit yang ingin diperiksa."
+        ),
+        "alasan": alasan,
+        "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+        "input_valid": False
+    }
 
 
 # =========================================================
@@ -293,14 +335,69 @@ def halaman_scan():
     if img_input is not None:
         st.image(img_input, use_container_width=True)
 
-        if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
-            with st.spinner("Menganalisis..."):
-                model = load_model()
-                pred_class, pred_conf = predict_image(img_input, model)
+       if st.button(
+    "🔍 Analisis Gambar",
+    use_container_width=True,
+    type="primary"
+):
 
-            label, badge_class = status_badge(pred_class)
-            tier_label, tier_class = keyakinan_tier(pred_conf)
-            rekomendasi = rekomendasi_text(pred_class, pred_conf)
+    # =====================================================
+    # 1. VALIDASI FOTO SEBELUM MASUK MODEL
+    # =====================================================
+    with st.spinner("Memeriksa validitas foto..."):
+        is_valid, alasan = validasi_foto(img_input)
+
+    if not is_valid:
+
+        # Foto tidak valid
+        st.session_state.scan_result = buat_hasil_invalid(
+            filename,
+            alasan
+        )
+
+        save_riwayat(st.session_state.scan_result)
+
+        st.warning("⚠️ Input Foto Tidak Valid")
+        st.info(alasan)
+
+    else:
+
+        # =================================================
+        # 2. FOTO VALID → LANJUT KE MODEL AI
+        # =================================================
+        with st.spinner("Menganalisis kondisi kulit..."):
+            model = load_model()
+            pred_class, pred_conf = predict_image(
+                img_input,
+                model
+            )
+
+        label, badge_class = status_badge(pred_class)
+        tier_label, tier_class = keyakinan_tier(pred_conf)
+        rekomendasi = rekomendasi_text(
+            pred_class,
+            pred_conf,
+            input_valid=True
+        )
+
+        st.session_state.scan_result = {
+            "filename": filename,
+            "class": pred_class,
+            "confidence": round(pred_conf, 2),
+            "label": label,
+            "badge_class": badge_class,
+            "tier_label": tier_label,
+            "tier_class": tier_class,
+            "rekomendasi": rekomendasi,
+            "date": datetime.now().strftime(
+                "%d %b %Y, %H:%M"
+            ),
+            "input_valid": True
+        }
+
+        save_riwayat(
+            st.session_state.scan_result
+        )
 
             st.session_state.scan_result = {
                 "filename": filename,
@@ -315,8 +412,141 @@ def halaman_scan():
             }
             save_riwayat(st.session_state.scan_result)
 
-    if st.session_state.scan_result:
-        r = st.session_state.scan_result
+   if st.session_state.scan_result:
+
+    r = st.session_state.scan_result
+
+    # =====================================================
+    # HASIL INPUT TIDAK VALID
+    # =====================================================
+    if not r.get("input_valid", True):
+
+        st.markdown(f"""
+        <div class="lentera-card"
+             style="background:#fff8e8; border-color:#f5d58a;">
+
+            <span class="badge-sedang">
+                ⚠️ Input Tidak Valid
+            </span>
+
+            <p style="margin-top:14px;">
+                <b>Hasil Pemeriksaan</b>
+            </p>
+
+            <p style="font-size:18px; font-weight:700;">
+                📷 Bukan Foto Kulit
+            </p>
+
+            <p style="margin-top:6px;">
+                {r.get("alasan", "Foto tidak sesuai untuk dianalisis.")}
+            </p>
+
+        </div>
+
+        <div class="lentera-card"
+             style="background:#eef5ff; border-color:#d5e5ff;">
+
+            <b>💡 Rekomendasi</b>
+
+            <p style="margin-top:6px;">
+                Silakan ambil foto <b>close-up area kulit</b> yang ingin
+                diperiksa. Hindari foto wajah/selfie, benda, pemandangan,
+                atau gambar yang tidak memperlihatkan kondisi kulit secara jelas.
+            </p>
+
+        </div>
+
+        <p style="font-size:12px; color:#9ca3af;">
+            ⚠️ Sistem hanya dapat melakukan analisis pada foto area kulit
+            yang sesuai dengan kebutuhan pemeriksaan.
+        </p>
+        """, unsafe_allow_html=True)
+
+    # =====================================================
+    # HASIL MODEL
+    # =====================================================
+    else:
+
+        tier_class = r.get(
+            "tier_class",
+            "badge-rendah"
+        )
+
+        tier_label = r.get(
+            "tier_label",
+            "-"
+        )
+
+        st.markdown(f"""
+        <div class="lentera-card">
+
+            <span class="{tier_class}">
+                {tier_label}
+            </span>
+
+            <span class="badge-dark"
+                  style="float:right;">
+                {r['label']}
+            </span>
+
+            <p style="margin-top:14px;">
+                <b>Kelas: {r['class']}</b>
+            </p>
+
+            <p style="margin-top:2px;">
+                <b>Tingkat Keyakinan Model</b>
+            </p>
+
+            <div style="
+                background:#eee;
+                border-radius:8px;
+                height:10px;
+                margin-bottom:4px;
+            ">
+
+                <div style="
+                    background:#2ecc71;
+                    width:{r['confidence']}%;
+                    height:10px;
+                    border-radius:8px;
+                "></div>
+
+            </div>
+
+            <p style="
+                text-align:right;
+                font-size:13px;
+                color:#666;
+            ">
+                {r['confidence']}%
+            </p>
+
+        </div>
+
+        <div class="lentera-card"
+             style="
+                background:#eefbf1;
+                border-color:#d4f3e0;
+             ">
+
+            <b>✅ Rekomendasi</b>
+
+            <p style="margin-top:6px;">
+                {r['rekomendasi']}
+            </p>
+
+        </div>
+
+        <p style="
+            font-size:12px;
+            color:#9ca3af;
+        ">
+            ⚠️ Hasil ini adalah estimasi berbasis AI,
+            bukan diagnosis medis. Selalu konsultasikan
+            ke tenaga kesehatan untuk kepastian.
+        </p>
+
+        """, unsafe_allow_html=True)
         tier_class = r.get("tier_class", "badge-rendah")
         tier_label = r.get("tier_label", "-")
         st.markdown(f"""

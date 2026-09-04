@@ -48,9 +48,6 @@ st.markdown("""
         padding-top: 1rem;
         padding-bottom: 6rem;
         margin: auto;
-        border-left: 1px solid #e5e7eb;
-        border-right: 1px solid #e5e7eb;
-        box-shadow: 0 0 24px rgba(0,0,0,0.06);
     }
     .lentera-header {
         background: linear-gradient(135deg, #3b5fe2, #5b7cf0);
@@ -60,20 +57,30 @@ st.markdown("""
         margin-bottom: 16px;
     }
     .lentera-card {
-        background: #1c2333;
+        background: #ffffff;
         border-radius: 14px;
         padding: 16px;
-        border: 1px solid #2e3750;
+        border: 1px solid #e5e7eb;
         margin-bottom: 12px;
-        color: #e5e7eb;
+        color: #1f2937;
     }
-    .lentera-card p, .lentera-card li, .lentera-card b {
-        color: #e5e7eb;
+    .lentera-card p, .lentera-card li, .lentera-card b, .lentera-card span:not([class^="badge"]) {
+        color: #1f2937;
     }
     .lentera-card ul { margin: 6px 0 0 0; padding-left: 18px; }
-    .badge-rendah { background:#173829; color:#4ade80; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
-    .badge-sedang { background:#3a2e10; color:#facc15; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
-    .badge-tinggi { background:#3a1717; color:#f87171; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .lentera-section-label {
+        font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+        color: #9ca3af; margin: 4px 0 6px 4px; text-transform: uppercase;
+    }
+    .lentera-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 4px; border-bottom: 1px solid #f0f1f4;
+    }
+    .lentera-row:last-child { border-bottom: none; }
+    .badge-rendah { background:#e7f8ee; color:#1e9e5a; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-sedang { background:#fff5e6; color:#d98a1a; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-tinggi { background:#fdeaea; color:#d63d3d; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-dark { background:#1f2937; color:#ffffff; padding:4px 10px; border-radius:20px; font-weight:600; font-size:12px; }
     div[data-testid="stBottomBlockContainer"] { max-width: 430px; margin: auto; }
 
     /* Tombol jangan wrap ke baris baru, teks disusutkan biar muat */
@@ -83,6 +90,7 @@ st.markdown("""
         text-overflow: ellipsis;
         font-size: 12px;
         padding: 8px 2px;
+        border-radius: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -153,6 +161,15 @@ def status_badge(pred_class):
     if pred_class == "Bukan kusta":
         return "Tidak Terdeteksi", "badge-rendah"
     return "Kusta Terdeteksi", "badge-tinggi"
+
+
+def keyakinan_tier(pred_conf):
+    """Kategori tingkat keyakinan model (bukan penilaian risiko klinis)."""
+    if pred_conf >= THRESHOLD:
+        return "Keyakinan Tinggi", "badge-tinggi"
+    if pred_conf >= 50:
+        return "Keyakinan Sedang", "badge-sedang"
+    return "Keyakinan Rendah", "badge-rendah"
 
 
 def rekomendasi_text(pred_class, pred_conf):
@@ -244,18 +261,31 @@ def halaman_scan():
     st.markdown("### 📷 Scan Kulit")
     st.caption("Deteksi tanda-tanda kusta dengan AI")
 
-    mode = st.radio("Pilih metode input:", ["Buka Kamera", "Dari Galeri"], horizontal=True)
+    if "scan_mode" not in st.session_state:
+        st.session_state.scan_mode = "Buka Kamera"
+
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("📷 Buka Kamera", use_container_width=True,
+                      type="primary" if st.session_state.scan_mode == "Buka Kamera" else "secondary"):
+            st.session_state.scan_mode = "Buka Kamera"
+            st.rerun()
+    with c2:
+        if st.button("🖼️ Dari Galeri", use_container_width=True,
+                      type="primary" if st.session_state.scan_mode == "Dari Galeri" else "secondary"):
+            st.session_state.scan_mode = "Dari Galeri"
+            st.rerun()
 
     img_input = None
     filename = None
 
-    if mode == "Buka Kamera":
-        cam_result = st.camera_input("Arahkan kamera ke area kulit yang ingin diperiksa")
+    if st.session_state.scan_mode == "Buka Kamera":
+        cam_result = st.camera_input("Arahkan kamera ke area kulit yang ingin diperiksa", label_visibility="collapsed")
         if cam_result is not None:
             img_input = Image.open(cam_result)
             filename = f"scan_kamera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     else:
-        uploaded_file = st.file_uploader("Pilih gambar dari galeri", type=["jpg", "jpeg", "png"])
+        uploaded_file = st.file_uploader("Pilih gambar dari galeri", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
         if uploaded_file is not None:
             img_input = Image.open(uploaded_file)
             filename = uploaded_file.name
@@ -269,6 +299,7 @@ def halaman_scan():
                 pred_class, pred_conf = predict_image(img_input, model)
 
             label, badge_class = status_badge(pred_class)
+            tier_label, tier_class = keyakinan_tier(pred_conf)
             rekomendasi = rekomendasi_text(pred_class, pred_conf)
 
             st.session_state.scan_result = {
@@ -277,6 +308,8 @@ def halaman_scan():
                 "confidence": round(pred_conf, 2),
                 "label": label,
                 "badge_class": badge_class,
+                "tier_label": tier_label,
+                "tier_class": tier_class,
                 "rekomendasi": rekomendasi,
                 "date": datetime.now().strftime("%d %b %Y, %H:%M"),
             }
@@ -284,16 +317,20 @@ def halaman_scan():
 
     if st.session_state.scan_result:
         r = st.session_state.scan_result
+        tier_class = r.get("tier_class", "badge-rendah")
+        tier_label = r.get("tier_label", "-")
         st.markdown(f"""
         <div class="lentera-card">
-            <span class="{r['badge_class']}">{r['label']}</span>
-            <p style="margin-top:14px;"><b>Tingkat Keyakinan Model</b></p>
+            <span class="{tier_class}">{tier_label}</span>
+            <span class="badge-dark" style="float:right;">{r['label']}</span>
+            <p style="margin-top:14px;"><b>Kelas: {r['class']}</b></p>
+            <p style="margin-top:2px;"><b>Tingkat Keyakinan Model</b></p>
             <div style="background:#eee; border-radius:8px; height:10px; margin-bottom:4px;">
                 <div style="background:#2ecc71; width:{r['confidence']}%; height:10px; border-radius:8px;"></div>
             </div>
             <p style="text-align:right; font-size:13px; color:#666;">{r['confidence']}%</p>
         </div>
-        <div class="lentera-card" style="background:#14261c; border-color:#1f3a2a;">
+        <div class="lentera-card" style="background:#eefbf1; border-color:#d4f3e0;">
             <b>✅ Rekomendasi</b>
             <p style="margin-top:6px;">{r['rekomendasi']}</p>
         </div>
@@ -315,7 +352,7 @@ def halaman_faskes():
         {"nama": "Klinik Pratama Sehat Sejahtera", "tipe": "Klinik Pratama", "jarak": "2.3 km", "status": "Tutup"},
     ]
     st.caption(f"{len(faskes_dummy)} FASKES DITEMUKAN (data contoh)")
-    for f in faskes_dummy:
+    for i, f in enumerate(faskes_dummy):
         warna = "#1e9e5a" if f["status"] == "Buka" else "#d63d3d"
         st.markdown(f"""
         <div class="lentera-card">
@@ -324,6 +361,8 @@ def halaman_faskes():
             <span style="color:{warna}; font-size:13px;">● {f['status']}</span>
         </div>
         """, unsafe_allow_html=True)
+        if i == 1:
+            st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True)
     st.caption("Catatan: data faskes di atas masih contoh statis. Untuk lokasi real-time dibutuhkan integrasi API peta (mis. Google Places).")
 
 
@@ -340,12 +379,12 @@ def halaman_riwayat():
         return
 
     for entry in data:
-        label = entry.get("label", "-")
-        badge_class = entry.get("badge_class", "badge-rendah")
+        tier_label = entry.get("tier_label", entry.get("label", "-"))
+        tier_class = entry.get("tier_class", entry.get("badge_class", "badge-rendah"))
         st.markdown(f"""
         <div class="lentera-card">
             <b>{entry.get('filename', '-')}</b>
-            <span class="{badge_class}" style="float:right;">{label}</span><br>
+            <span class="{tier_class}" style="float:right;">{tier_label}</span><br>
             <span style="color:#888; font-size:12px;">{entry.get('date', '-')}</span>
         </div>
         """, unsafe_allow_html=True)
@@ -357,23 +396,32 @@ def halaman_riwayat():
 def halaman_akun():
     st.markdown("### 👤 Akun Saya")
     st.markdown(f"""
-    <div class="lentera-card">
-        <b>{USER_NAME}</b><br>
-        <span style="color:#888; font-size:13px;">Data profil ditampilkan sesuai konfigurasi demo</span>
+    <div class="lentera-header" style="display:flex; align-items:center; gap:14px;">
+        <div style="font-size:36px;">🧑</div>
+        <div>
+            <b style="font-size:16px;">{USER_NAME}</b><br>
+            <span style="opacity:0.85; font-size:13px;">budi.santoso@email.com</span><br>
+            <span style="opacity:0.85; font-size:13px;">NIK: •••••••••053492</span>
+        </div>
     </div>
+
+    <div class="lentera-section-label">Profil</div>
     <div class="lentera-card">
-        <b>PROFIL</b><br><br>
-        Edit Profil &nbsp;›
+        <div class="lentera-row"><span>✏️ Edit Profil</span><span>›</span></div>
     </div>
+
+    <div class="lentera-section-label">Preferensi</div>
     <div class="lentera-card">
-        <b>PREFERENSI</b><br><br>
-        Pengaturan Notifikasi &nbsp;›<br>
-        Bahasa: Indonesia &nbsp;›
+        <div class="lentera-row"><span>🔔 Pengaturan Notifikasi</span><span>›</span></div>
+        <div class="lentera-row"><span>🌐 Bahasa</span><span>Indonesia ›</span></div>
     </div>
+
+    <div class="lentera-section-label">Privasi & Keamanan</div>
     <div class="lentera-card">
-        <b>PRIVASI & KEAMANAN</b><br><br>
-        Privasi & Data &nbsp;›
+        <div class="lentera-row"><span>🔒 Privasi & Data</span><span>›</span></div>
+        <div class="lentera-row"><span>💳 Koneksikan dengan JKN</span><span style="color:#3b5fe2;">Hubungkan</span></div>
     </div>
+    <p style="font-size:12px; color:#9ca3af;">Menghubungkan JKN memungkinkan data skrining Anda terkoordinasi dengan layanan BPJS Kesehatan.</p>
     """, unsafe_allow_html=True)
 
 

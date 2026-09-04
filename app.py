@@ -600,24 +600,168 @@ def halaman_faskes():
 # HALAMAN: RIWAYAT
 # =========================================================
 def halaman_riwayat():
+
     st.markdown("### 🕘 Riwayat Pemeriksaan")
+
     data = load_riwayat()
-    st.caption(f"{len(data)} pemeriksaan tersimpan")
+
+    # =====================================================
+    # HEADER RIWAYAT
+    # =====================================================
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.caption(
+            f"{len(data)} pemeriksaan tersimpan"
+        )
+
+    with col2:
+        if data:
+            if st.button(
+                "🧹 Bersihkan",
+                use_container_width=True
+            ):
+                st.session_state.confirm_clear = True
+
+    # =====================================================
+    # KONFIRMASI HAPUS SEMUA
+    # =====================================================
+
+    if st.session_state.get(
+        "confirm_clear",
+        False
+    ):
+
+        st.warning(
+            "Apakah kamu yakin ingin menghapus "
+            "seluruh riwayat pemeriksaan?"
+        )
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            if st.button(
+                "Ya, Hapus Semua",
+                use_container_width=True,
+                type="primary"
+            ):
+
+                clear_riwayat()
+
+                st.session_state.confirm_clear = False
+                st.session_state.scan_result = None
+
+                st.success(
+                    "Seluruh riwayat berhasil dihapus."
+                )
+
+                st.rerun()
+
+        with c2:
+            if st.button(
+                "Batal",
+                use_container_width=True
+            ):
+
+                st.session_state.confirm_clear = False
+                st.rerun()
+
+    # =====================================================
+    # JIKA BELUM ADA RIWAYAT
+    # =====================================================
 
     if not data:
-        st.info("Belum ada riwayat pemeriksaan. Coba lakukan scan terlebih dahulu.")
+
+        st.info(
+            "Belum ada riwayat pemeriksaan. "
+            "Coba lakukan scan terlebih dahulu."
+        )
+
         return
 
-    for entry in data:
-        tier_label = entry.get("tier_label", entry.get("label", "-"))
-        tier_class = entry.get("tier_class", entry.get("badge_class", "badge-rendah"))
-        st.markdown(f"""
-        <div class="lentera-card">
-            <b>{entry.get('filename', '-')}</b>
-            <span class="{tier_class}" style="float:right;">{tier_label}</span><br>
-            <span style="color:#888; font-size:12px;">{entry.get('date', '-')}</span>
-        </div>
-        """, unsafe_allow_html=True)
+    # =====================================================
+    # DAFTAR RIWAYAT
+    # =====================================================
+
+    for i, entry in enumerate(data):
+
+        tier_label = entry.get(
+            "tier_label",
+            entry.get("label", "-")
+        )
+
+        tier_class = entry.get(
+            "tier_class",
+            entry.get("badge_class", "badge-rendah")
+        )
+
+        input_valid = entry.get(
+            "input_valid",
+            True
+        )
+
+        # Tentukan tampilan untuk input invalid
+        if not input_valid:
+
+            status_text = "Input Tidak Valid"
+            status_class = "badge-sedang"
+
+        else:
+
+            status_text = tier_label
+            status_class = tier_class
+
+        st.markdown(
+            f"""
+            <div class="lentera-card">
+
+                <b>
+                    {entry.get('filename', '-')}
+                </b>
+
+                <span class="{status_class}"
+                      style="float:right;">
+                    {status_text}
+                </span>
+
+                <br>
+
+                <span style="
+                    color:#888;
+                    font-size:12px;
+                ">
+                    {entry.get('date', '-')}
+                </span>
+
+                <br>
+
+                <span style="
+                    color:#666;
+                    font-size:13px;
+                ">
+                    {entry.get('class', '-')}
+                </span>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # Tombol hapus individual
+        if st.button(
+            "🗑️ Hapus",
+            key=f"hapus_riwayat_{i}",
+            use_container_width=True
+        ):
+
+            delete_riwayat(i)
+
+            st.success(
+                "Riwayat berhasil dihapus."
+            )
+
+            st.rerun()
 
 
 # =========================================================

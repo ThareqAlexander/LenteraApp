@@ -1,0 +1,368 @@
+"""
+LENTERA — Leprosy Early Recognition and Assessment
+=====================================================
+Web app deteksi dini kusta dengan tampilan mobile-style,
+fitur scan kamera langsung + upload gambar, riwayat, dan info edukasi.
+
+Cara menjalankan:
+    pip install -r requirements.txt
+    streamlit run app.py
+"""
+
+import os
+import json
+import zipfile
+from datetime import datetime
+
+import numpy as np
+import streamlit as st
+from PIL import Image
+
+import tensorflow as tf
+from tensorflow.keras.preprocessing import image as keras_image
+from tensorflow.keras.applications import efficientnet
+
+# =========================================================
+# KONFIGURASI — SESUAIKAN BAGIAN INI
+# =========================================================
+ZIP_PATH = r"D:\Alex Folder\KARIR\College Things\Karir\SEC\BISMILLAH FIX\MODEL.OLD.zip"
+EXTRACT_PATH = r"D:\Alex Folder\KARIR\College Things\Karir\SEC\BISMILLAH FIX\model"
+RIWAYAT_PATH = "riwayat.json"
+
+CLASS_NAMES = ["Bukan kusta", "Kusta"]
+IMG_SIZE = (300, 300)
+THRESHOLD = 70  # dalam persen
+
+USER_NAME = "Budi Santoso"  # ganti sesuai kebutuhan demo
+
+st.set_page_config(page_title="Lentera", page_icon="🩺", layout="centered")
+
+# =========================================================
+# CSS — supaya tampilan menyerupai aplikasi mobile
+# =========================================================
+st.markdown("""
+<style>
+    .block-container {
+        max-width: 430px;
+        padding-top: 1rem;
+        padding-bottom: 6rem;
+        margin: auto;
+        border-left: 1px solid #e5e7eb;
+        border-right: 1px solid #e5e7eb;
+        box-shadow: 0 0 24px rgba(0,0,0,0.06);
+    }
+    .lentera-header {
+        background: linear-gradient(135deg, #3b5fe2, #5b7cf0);
+        border-radius: 18px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 16px;
+    }
+    .lentera-card {
+        background: #1c2333;
+        border-radius: 14px;
+        padding: 16px;
+        border: 1px solid #2e3750;
+        margin-bottom: 12px;
+        color: #e5e7eb;
+    }
+    .lentera-card p, .lentera-card li, .lentera-card b {
+        color: #e5e7eb;
+    }
+    .lentera-card ul { margin: 6px 0 0 0; padding-left: 18px; }
+    .badge-rendah { background:#173829; color:#4ade80; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-sedang { background:#3a2e10; color:#facc15; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-tinggi { background:#3a1717; color:#f87171; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    div[data-testid="stBottomBlockContainer"] { max-width: 430px; margin: auto; }
+
+    /* Tombol jangan wrap ke baris baru, teks disusutkan biar muat */
+    div[data-testid="stButton"] button {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        padding: 8px 2px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# MODEL
+# =========================================================
+@st.cache_resource(show_spinner="Memuat model, mohon tunggu...")
+def load_model():
+    if not os.path.exists(EXTRACT_PATH):
+        with zipfile.ZipFile(ZIP_PATH, "r") as zip_ref:
+            zip_ref.extractall(EXTRACT_PATH)
+    with open(os.path.join(EXTRACT_PATH, "config.json"), "r") as f:
+        config = json.load(f)
+    model = tf.keras.models.model_from_json(json.dumps(config))
+    model.load_weights(os.path.join(EXTRACT_PATH, "model.weights.h5"))
+    return model
+
+
+def predict_image(pil_img, model):
+    img_resized = pil_img.convert("RGB").resize(IMG_SIZE)
+    img_array = keras_image.img_to_array(img_resized)
+    img_preprocessed = efficientnet.preprocess_input(img_array.copy())
+    img_batch = np.expand_dims(img_preprocessed, axis=0)
+    predictions = model.predict(img_batch, verbose=0)[0]
+    top_idx = int(np.argmax(predictions))
+    return CLASS_NAMES[top_idx], float(predictions[top_idx] * 100)
+
+
+def status_badge(pred_class):
+    """Menampilkan status klasifikasi apa adanya (bukan penilaian tingkat risiko klinis)."""
+    if pred_class == "Bukan kusta":
+        return "Tidak Terdeteksi", "badge-rendah"
+    return "Kusta Terdeteksi", "badge-tinggi"
+
+
+def rekomendasi_text(pred_class, pred_conf):
+    if pred_class == "Bukan kusta":
+        return "Tidak ditemukan tanda-tanda kusta yang signifikan. Tetap jaga kebersihan kulit dan periksa ulang jika muncul perubahan."
+    if pred_conf >= THRESHOLD:
+        return "Terdapat indikasi kuat. Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat untuk pemeriksaan lebih lanjut."
+    return "Terdapat indikasi ringan. Pantau kondisi kulit selama 2-4 minggu. Kunjungi Puskesmas jika ada perubahan."
+
+
+# =========================================================
+# RIWAYAT (baca/tulis riwayat.json)
+# =========================================================
+def load_riwayat():
+    if os.path.exists(RIWAYAT_PATH):
+        try:
+            with open(RIWAYAT_PATH, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return []
+    return []
+
+
+def save_riwayat(entry):
+    data = load_riwayat()
+    data.insert(0, entry)
+    with open(RIWAYAT_PATH, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+# =========================================================
+# STATE NAVIGASI
+# =========================================================
+if "page" not in st.session_state:
+    st.session_state.page = "Beranda"
+if "scan_result" not in st.session_state:
+    st.session_state.scan_result = None
+
+
+def go_to(page_name):
+    st.session_state.page = page_name
+
+
+# =========================================================
+# HALAMAN: BERANDA
+# =========================================================
+def halaman_beranda():
+    st.markdown(f"""
+    <div class="lentera-header">
+        <h2 style="margin:0;">🌿 LENTERA</h2>
+        <p style="margin:4px 0 0 0;">Selamat datang kembali,</p>
+        <h3 style="margin:0;">{USER_NAME} 👋</h3>
+        <p style="opacity:0.85; margin-top:4px;">Leprosy Early Recognition and Assessment</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("📷\nScan", use_container_width=True):
+            go_to("Scan")
+            st.rerun()
+    with c2:
+        if st.button("📍\nFaskes", use_container_width=True):
+            go_to("Faskes")
+            st.rerun()
+    with c3:
+        if st.button("🕘\nRiwayat", use_container_width=True):
+            go_to("Riwayat")
+            st.rerun()
+
+    st.markdown("""
+    <div class="lentera-card">
+        <b>📖 Apa itu Kusta?</b>
+        <p style="margin-top:8px;">Penyakit infeksi kronis akibat bakteri <i>Mycobacterium leprae</i>
+        yang menyerang kulit dan saraf tepi.</p>
+        <ul>
+            <li>Penularan melalui kontak erat jangka panjang</li>
+            <li>Tanda awal: bercak pucat/mati rasa pada kulit</li>
+            <li>Dapat disembuhkan dengan MDT (Multi Drug Therapy) sejak dini</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# =========================================================
+# HALAMAN: SCAN (kamera langsung + upload)
+# =========================================================
+def halaman_scan():
+    st.markdown("### 📷 Scan Kulit")
+    st.caption("Deteksi tanda-tanda kusta dengan AI")
+
+    mode = st.radio("Pilih metode input:", ["Buka Kamera", "Dari Galeri"], horizontal=True)
+
+    img_input = None
+    filename = None
+
+    if mode == "Buka Kamera":
+        cam_result = st.camera_input("Arahkan kamera ke area kulit yang ingin diperiksa")
+        if cam_result is not None:
+            img_input = Image.open(cam_result)
+            filename = f"scan_kamera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+    else:
+        uploaded_file = st.file_uploader("Pilih gambar dari galeri", type=["jpg", "jpeg", "png"])
+        if uploaded_file is not None:
+            img_input = Image.open(uploaded_file)
+            filename = uploaded_file.name
+
+    if img_input is not None:
+        st.image(img_input, use_container_width=True)
+
+        if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
+            with st.spinner("Menganalisis..."):
+                model = load_model()
+                pred_class, pred_conf = predict_image(img_input, model)
+
+            label, badge_class = status_badge(pred_class)
+            rekomendasi = rekomendasi_text(pred_class, pred_conf)
+
+            st.session_state.scan_result = {
+                "filename": filename,
+                "class": pred_class,
+                "confidence": round(pred_conf, 2),
+                "label": label,
+                "badge_class": badge_class,
+                "rekomendasi": rekomendasi,
+                "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+            }
+            save_riwayat(st.session_state.scan_result)
+
+    if st.session_state.scan_result:
+        r = st.session_state.scan_result
+        st.markdown(f"""
+        <div class="lentera-card">
+            <span class="{r['badge_class']}">{r['label']}</span>
+            <p style="margin-top:14px;"><b>Tingkat Keyakinan Model</b></p>
+            <div style="background:#eee; border-radius:8px; height:10px; margin-bottom:4px;">
+                <div style="background:#2ecc71; width:{r['confidence']}%; height:10px; border-radius:8px;"></div>
+            </div>
+            <p style="text-align:right; font-size:13px; color:#666;">{r['confidence']}%</p>
+        </div>
+        <div class="lentera-card" style="background:#14261c; border-color:#1f3a2a;">
+            <b>✅ Rekomendasi</b>
+            <p style="margin-top:6px;">{r['rekomendasi']}</p>
+        </div>
+        <p style="font-size:12px; color:#9ca3af;">⚠️ Hasil ini adalah estimasi berbasis AI, bukan diagnosis medis. Selalu konsultasikan ke tenaga kesehatan untuk kepastian.</p>
+        """, unsafe_allow_html=True)
+
+
+# =========================================================
+# HALAMAN: FASKES (data contoh — belum terhubung API lokasi asli)
+# =========================================================
+def halaman_faskes():
+    st.markdown("### 📍 Faskes Terdekat")
+    st.caption("Berdasarkan lokasi Anda saat ini")
+    st.text_input("🔍 Cari fasilitas kesehatan...")
+
+    faskes_dummy = [
+        {"nama": "RSUD Dr. H. Moh. Anwar", "tipe": "Rumah Sakit Umum", "jarak": "1.2 km", "status": "Buka"},
+        {"nama": "Puskesmas Kota Sumenep", "tipe": "Puskesmas", "jarak": "0.8 km", "status": "Buka"},
+        {"nama": "Klinik Pratama Sehat Sejahtera", "tipe": "Klinik Pratama", "jarak": "2.3 km", "status": "Tutup"},
+    ]
+    st.caption(f"{len(faskes_dummy)} FASKES DITEMUKAN (data contoh)")
+    for f in faskes_dummy:
+        warna = "#1e9e5a" if f["status"] == "Buka" else "#d63d3d"
+        st.markdown(f"""
+        <div class="lentera-card">
+            <b>{f['nama']}</b><br>
+            <span style="color:#666; font-size:13px;">{f['tipe']} · {f['jarak']}</span><br>
+            <span style="color:{warna}; font-size:13px;">● {f['status']}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    st.caption("Catatan: data faskes di atas masih contoh statis. Untuk lokasi real-time dibutuhkan integrasi API peta (mis. Google Places).")
+
+
+# =========================================================
+# HALAMAN: RIWAYAT
+# =========================================================
+def halaman_riwayat():
+    st.markdown("### 🕘 Riwayat Pemeriksaan")
+    data = load_riwayat()
+    st.caption(f"{len(data)} pemeriksaan tersimpan")
+
+    if not data:
+        st.info("Belum ada riwayat pemeriksaan. Coba lakukan scan terlebih dahulu.")
+        return
+
+    for entry in data:
+        label = entry.get("label", "-")
+        badge_class = entry.get("badge_class", "badge-rendah")
+        st.markdown(f"""
+        <div class="lentera-card">
+            <b>{entry.get('filename', '-')}</b>
+            <span class="{badge_class}" style="float:right;">{label}</span><br>
+            <span style="color:#888; font-size:12px;">{entry.get('date', '-')}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# =========================================================
+# HALAMAN: AKUN
+# =========================================================
+def halaman_akun():
+    st.markdown("### 👤 Akun Saya")
+    st.markdown(f"""
+    <div class="lentera-card">
+        <b>{USER_NAME}</b><br>
+        <span style="color:#888; font-size:13px;">Data profil ditampilkan sesuai konfigurasi demo</span>
+    </div>
+    <div class="lentera-card">
+        <b>PROFIL</b><br><br>
+        Edit Profil &nbsp;›
+    </div>
+    <div class="lentera-card">
+        <b>PREFERENSI</b><br><br>
+        Pengaturan Notifikasi &nbsp;›<br>
+        Bahasa: Indonesia &nbsp;›
+    </div>
+    <div class="lentera-card">
+        <b>PRIVASI & KEAMANAN</b><br><br>
+        Privasi & Data &nbsp;›
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# =========================================================
+# RENDER HALAMAN AKTIF
+# =========================================================
+pages = {
+    "Beranda": halaman_beranda,
+    "Faskes": halaman_faskes,
+    "Scan": halaman_scan,
+    "Riwayat": halaman_riwayat,
+    "Akun": halaman_akun,
+}
+pages[st.session_state.page]()
+
+# =========================================================
+# BOTTOM NAVIGATION
+# =========================================================
+st.write("")
+nav_labels = ["🏠 Beranda", "📍 Faskes", "📷 Scan", "🕘 Riwayat", "👤 Akun"]
+nav_keys = ["Beranda", "Faskes", "Scan", "Riwayat", "Akun"]
+cols = st.columns(5)
+for col, label, key in zip(cols, nav_labels, nav_keys):
+    with col:
+        is_active = st.session_state.page == key
+        if st.button(label, key=f"nav_{key}", use_container_width=True,
+                     type="primary" if is_active else "secondary"):
+            go_to(key)
+            st.rerun()

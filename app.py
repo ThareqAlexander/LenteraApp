@@ -361,7 +361,7 @@ def halaman_scan():
             img_input = Image.open(uploaded_file)
             filename = uploaded_file.name
 
- def halaman_scan():
+def halaman_scan():
     st.markdown("### 📷 Scan Kulit")
     st.caption("Deteksi tanda-tanda kusta dengan AI")
 

@@ -13,6 +13,7 @@ import os
 import json
 import zipfile
 import hashlib
+import base64
 from datetime import datetime
 
 import cv2
@@ -38,6 +39,18 @@ THRESHOLD = 70  # dalam persen
 USER_NAME = "Budi Santoso"  # ganti sesuai kebutuhan demo
 
 st.set_page_config(page_title="Lentera", page_icon="🩺", layout="wide")
+
+
+@st.cache_data
+def load_logo_base64():
+    logo_path = "logo_lentera_icon.png"
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return None
+
+
+LOGO_B64 = load_logo_base64()
 
 # =========================================================
 # CSS — supaya tampilan menyerupai aplikasi mobile
@@ -241,9 +254,11 @@ def go_to(page_name):
 # HALAMAN: BERANDA
 # =========================================================
 def halaman_beranda():
+    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:40px; vertical-align:middle;">'
+                 if LOGO_B64 else "🌿")
     st.markdown(f"""
     <div class="lentera-header">
-        <h2 style="margin:0;">🌿 LENTERA</h2>
+        <h2 style="margin:0;">{logo_html} LENTERA</h2>
         <p style="margin:4px 0 0 0;">Selamat datang kembali,</p>
         <h3 style="margin:0;">{USER_NAME} 👋</h3>
         <p style="opacity:0.85; margin-top:4px;">Leprosy Early Recognition and Assessment</p>

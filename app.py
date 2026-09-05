@@ -37,7 +37,7 @@ THRESHOLD = 70  # dalam persen
 
 USER_NAME = "Budi Santoso"  # ganti sesuai kebutuhan demo
 
-st.set_page_config(page_title="Lentera", page_icon="🩺", layout="centered")
+st.set_page_config(page_title="Lentera", page_icon="🩺", layout="wide")
 
 # =========================================================
 # CSS — supaya tampilan menyerupai aplikasi mobile
@@ -45,10 +45,17 @@ st.set_page_config(page_title="Lentera", page_icon="🩺", layout="centered")
 st.markdown("""
 <style>
     .block-container {
-        max-width: 430px;
+        max-width: 720px;
         padding-top: 4.5rem;
         padding-bottom: 6rem;
         margin: auto;
+    }
+    @media (max-width: 640px) {
+        .block-container {
+            max-width: 100%;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
     }
     .lentera-header {
         background: linear-gradient(135deg, #3b5fe2, #5b7cf0);
@@ -83,7 +90,15 @@ st.markdown("""
     .badge-tinggi { background:#fdeaea; color:#d63d3d; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
     .badge-abu { background:#f0f1f4; color:#6b7280; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
     .badge-dark { background:#1f2937; color:#ffffff; padding:4px 10px; border-radius:20px; font-weight:600; font-size:12px; }
-    div[data-testid="stBottomBlockContainer"] { max-width: 430px; margin: auto; }
+    div[data-testid="stBottomBlockContainer"] {
+        max-width: 720px;
+        margin: auto;
+    }
+    @media (max-width: 640px) {
+        div[data-testid="stBottomBlockContainer"] {
+            max-width: 100%;
+        }
+    }
 
     /* Tombol jangan wrap ke baris baru, teks disusutkan biar muat */
     div[data-testid="stButton"] button {

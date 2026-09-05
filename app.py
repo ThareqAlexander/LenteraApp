@@ -12,6 +12,7 @@ Cara menjalankan:
 import os
 import json
 import zipfile
+import hashlib
 from datetime import datetime
 
 import cv2
@@ -213,6 +214,8 @@ if "page" not in st.session_state:
     st.session_state.page = "Beranda"
 if "scan_result" not in st.session_state:
     st.session_state.scan_result = None
+if "analyzed_image_id" not in st.session_state:
+    st.session_state.analyzed_image_id = None
 
 
 def go_to(page_name):
@@ -284,20 +287,35 @@ def halaman_scan():
 
     img_input = None
     filename = None
+    img_bytes = None
 
     if st.session_state.scan_mode == "Buka Kamera":
         cam_result = st.camera_input("Arahkan kamera ke area kulit yang ingin diperiksa", label_visibility="collapsed")
         if cam_result is not None:
+            img_bytes = cam_result.getvalue()
             img_input = Image.open(cam_result)
             filename = f"scan_kamera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     else:
         uploaded_file = st.file_uploader("Pilih gambar dari galeri", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
         if uploaded_file is not None:
+            img_bytes = uploaded_file.getvalue()
             img_input = Image.open(uploaded_file)
             filename = uploaded_file.name
 
-    if img_input is not None:
-        st.image(img_input, use_container_width=True)
+    # Foto di-clear / belum ada foto -> reset hasil sebelumnya
+    if img_input is None:
+        st.session_state.scan_result = None
+        st.session_state.analyzed_image_id = None
+        return
+
+    current_image_id = hashlib.md5(img_bytes).hexdigest()
+    sudah_dianalisis = st.session_state.get("analyzed_image_id") == current_image_id
+
+    st.image(img_input, use_container_width=True)
+
+    if not sudah_dianalisis:
+        # Foto baru / belum dianalisis -> hasil lama (kalau ada) disembunyikan dulu
+        st.session_state.scan_result = None
 
         if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
             is_valid, alasan = validasi_foto(img_input)
@@ -336,6 +354,9 @@ def halaman_scan():
                     "date": datetime.now().strftime("%d %b %Y, %H:%M"),
                 }
                 save_riwayat(st.session_state.scan_result)
+
+            st.session_state.analyzed_image_id = current_image_id
+            st.rerun()
 
     if st.session_state.scan_result:
         r = st.session_state.scan_result

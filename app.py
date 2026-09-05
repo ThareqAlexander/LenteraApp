@@ -45,7 +45,7 @@ st.markdown("""
 <style>
     .block-container {
         max-width: 430px;
-        padding-top: 1rem;
+        padding-top: 4.5rem;
         padding-bottom: 6rem;
         margin: auto;
     }
@@ -80,6 +80,7 @@ st.markdown("""
     .badge-rendah { background:#e7f8ee; color:#1e9e5a; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
     .badge-sedang { background:#fff5e6; color:#d98a1a; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
     .badge-tinggi { background:#fdeaea; color:#d63d3d; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-abu { background:#f0f1f4; color:#6b7280; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
     .badge-dark { background:#1f2937; color:#ffffff; padding:4px 10px; border-radius:20px; font-weight:600; font-size:12px; }
     div[data-testid="stBottomBlockContainer"] { max-width: 430px; margin: auto; }
 
@@ -200,6 +201,11 @@ def save_riwayat(entry):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def hapus_semua_riwayat():
+    with open(RIWAYAT_PATH, "w") as f:
+        json.dump([], f)
+
+
 # =========================================================
 # STATE NAVIGASI
 # =========================================================
@@ -294,36 +300,53 @@ def halaman_scan():
         st.image(img_input, use_container_width=True)
 
         if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
-            with st.spinner("Menganalisis..."):
-                model = load_model()
-                pred_class, pred_conf = predict_image(img_input, model)
+            is_valid, alasan = validasi_foto(img_input)
 
-            label, badge_class = status_badge(pred_class)
-            tier_label, tier_class = keyakinan_tier(pred_conf)
-            rekomendasi = rekomendasi_text(pred_class, pred_conf)
+            if not is_valid:
+                st.session_state.scan_result = {
+                    "filename": filename,
+                    "class": "Tidak Valid",
+                    "confidence": 0,
+                    "label": "Input Tidak Valid",
+                    "badge_class": "badge-abu",
+                    "tier_label": "Bukan Foto Kulit",
+                    "tier_class": "badge-abu",
+                    "rekomendasi": alasan,
+                    "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+                }
+                save_riwayat(st.session_state.scan_result)
+            else:
+                with st.spinner("Menganalisis..."):
+                    model = load_model()
+                    pred_class, pred_conf = predict_image(img_input, model)
 
-            st.session_state.scan_result = {
-                "filename": filename,
-                "class": pred_class,
-                "confidence": round(pred_conf, 2),
-                "label": label,
-                "badge_class": badge_class,
-                "tier_label": tier_label,
-                "tier_class": tier_class,
-                "rekomendasi": rekomendasi,
-                "date": datetime.now().strftime("%d %b %Y, %H:%M"),
-            }
-            save_riwayat(st.session_state.scan_result)
+                label, badge_class = status_badge(pred_class)
+                tier_label, tier_class = keyakinan_tier(pred_conf)
+                rekomendasi = rekomendasi_text(pred_class, pred_conf)
+
+                st.session_state.scan_result = {
+                    "filename": filename,
+                    "class": pred_class,
+                    "confidence": round(pred_conf, 2),
+                    "label": label,
+                    "badge_class": badge_class,
+                    "tier_label": tier_label,
+                    "tier_class": tier_class,
+                    "rekomendasi": rekomendasi,
+                    "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+                }
+                save_riwayat(st.session_state.scan_result)
 
     if st.session_state.scan_result:
         r = st.session_state.scan_result
         tier_class = r.get("tier_class", "badge-rendah")
         tier_label = r.get("tier_label", "-")
+        kelas_line = f'<p style="margin-top:14px;"><b>Kelas: {r["class"]}</b></p>' if r["class"] != "Tidak Valid" else '<p style="margin-top:14px;"></p>'
         st.markdown(f"""
         <div class="lentera-card">
             <span class="{tier_class}">{tier_label}</span>
             <span class="badge-dark" style="float:right;">{r['label']}</span>
-            <p style="margin-top:14px;"><b>Kelas: {r['class']}</b></p>
+            {kelas_line}
             <p style="margin-top:2px;"><b>Tingkat Keyakinan Model</b></p>
             <div style="background:#eee; border-radius:8px; height:10px; margin-bottom:4px;">
                 <div style="background:#2ecc71; width:{r['confidence']}%; height:10px; border-radius:8px;"></div>
@@ -377,6 +400,26 @@ def halaman_riwayat():
     if not data:
         st.info("Belum ada riwayat pemeriksaan. Coba lakukan scan terlebih dahulu.")
         return
+
+    if "confirm_hapus" not in st.session_state:
+        st.session_state.confirm_hapus = False
+
+    if st.session_state.confirm_hapus:
+        st.warning("Yakin mau hapus semua riwayat? Tindakan ini tidak bisa dibatalkan.")
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("✅ Ya, Hapus", use_container_width=True, type="primary"):
+                hapus_semua_riwayat()
+                st.session_state.confirm_hapus = False
+                st.rerun()
+        with c2:
+            if st.button("Batal", use_container_width=True):
+                st.session_state.confirm_hapus = False
+                st.rerun()
+    else:
+        if st.button("🗑️ Hapus Semua Riwayat", use_container_width=True):
+            st.session_state.confirm_hapus = True
+            st.rerun()
 
     for entry in data:
         tier_label = entry.get("tier_label", entry.get("label", "-"))

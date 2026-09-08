@@ -52,6 +52,18 @@ def load_logo_base64():
 
 LOGO_B64 = load_logo_base64()
 
+
+@st.cache_data
+def load_avatar_base64():
+    avatar_path = "avatar_user.png"
+    if os.path.exists(avatar_path):
+        with open(avatar_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return None
+
+
+AVATAR_B64 = load_avatar_base64()
+
 # =========================================================
 # CSS — supaya tampilan menyerupai aplikasi mobile
 # =========================================================
@@ -280,6 +292,8 @@ def halaman_beranda():
 
     logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:{LOGO_HEIGHT_PX}px; width:auto; display:block;">'
                  if LOGO_B64 else f'<span style="font-size:{int(LOGO_HEIGHT_PX*0.7)}px;">🌿</span>')
+    avatar_html = (f'<img src="data:image/png;base64,{AVATAR_B64}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">'
+                   if AVATAR_B64 else '🧑')
     st.markdown(f"""
     <div class="lentera-header">
         <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -290,7 +304,7 @@ def halaman_beranda():
                     <div style="font-size:9px; color:#6b7a99; font-weight:600; line-height:1.2;">Leprosy Early Recognition and Assessment</div>
                 </div>
             </div>
-            <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:20px;">🧑</div>
+            <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; overflow:hidden;">{avatar_html}</div>
         </div>
         <p style="margin:20px 0 0 0;">Selamat datang kembali,</p>
         <p style="margin:0; font-size:20px; font-weight:800;">{USER_NAME} 👋</p>
@@ -522,9 +536,11 @@ def halaman_riwayat():
 # =========================================================
 def halaman_akun():
     st.markdown("### 👤 Akun Saya")
+    avatar_html_akun = (f'<img src="data:image/png;base64,{AVATAR_B64}" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">'
+                         if AVATAR_B64 else '<div style="font-size:36px;">🧑</div>')
     st.markdown(f"""
     <div class="lentera-header" style="display:flex; align-items:center; gap:14px;">
-        <div style="font-size:36px;">🧑</div>
+        {avatar_html_akun}
         <div>
             <b style="font-size:16px;">{USER_NAME}</b><br>
             <span style="opacity:0.85; font-size:13px;">budi.santoso@email.com</span><br>

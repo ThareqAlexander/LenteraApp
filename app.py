@@ -90,6 +90,7 @@ st.markdown("""
         justify-content: center;
         box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
+    .lentera-header {
         background: linear-gradient(135deg, #3b5fe2, #5b7cf0);
         border-radius: 18px;
         padding: 20px;
@@ -278,15 +279,15 @@ def halaman_beranda():
     st.markdown(f"""
     <div class="lentera-header">
         <div style="display:flex; align-items:center; justify-content:space-between;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="background:#ffffff; border-radius:10px; padding:4px 6px; display:flex; align-items:center;">{logo_html}</div>
-                <span style="font-size:22px; font-weight:800;">LENTERA</span>
+            <div style="background:#ffffff; border-radius:12px; padding:8px 14px; display:flex; align-items:center; gap:10px;">
+                <div style="display:flex; align-items:center;">{logo_html}</div>
+                <span style="font-size:20px; font-weight:800; color:#2451e0;">LENTERA</span>
             </div>
             <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:20px;">🧑</div>
         </div>
+        <p style="opacity:0.85; margin:10px 0 0 0; font-size:13px;">Leprosy Early Recognition and Assessment</p>
         <p style="margin:14px 0 0 0;">Selamat datang kembali,</p>
-        <h3 style="margin:0;">{USER_NAME} 👋</h3>
-        <p style="opacity:0.85; margin-top:4px; font-size:13px;">Leprosy Early Recognition and Assessment</p>
+        <p style="margin:0; font-size:20px; font-weight:800;">{USER_NAME} 👋</p>
     </div>
     """, unsafe_allow_html=True)
 

@@ -254,7 +254,7 @@ def go_to(page_name):
 # HALAMAN: BERANDA
 # =========================================================
 def halaman_beranda():
-    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:75px; vertical-align:middle;">'
+    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:85px; vertical-align:middle;">'
                  if LOGO_B64 else "🌿")
     st.markdown(f"""
     <div class="lentera-header">

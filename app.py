@@ -82,12 +82,26 @@ st.markdown("""
        jangan ikut aturan bawaan Streamlit yang men-stack kolom di layar sempit */
     div[data-testid="stHorizontalBlock"] {
         flex-wrap: nowrap !important;
-        gap: 8px !important;
+        gap: 6px !important;
+        width: 100% !important;
     }
     div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
         min-width: 0 !important;
         width: 100% !important;
         flex: 1 1 0 !important;
+    }
+    div[data-testid="stButton"] {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    div[data-testid="stButton"] button {
+        min-width: 0 !important;
+        width: 100% !important;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+    }
+    html, body, .stApp, .main {
+        overflow-x: hidden !important;
     }
     .lentera-logo-badge {
         background: #ffffff;

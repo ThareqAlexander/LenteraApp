@@ -36,7 +36,7 @@ CLASS_NAMES = ["Bukan kusta", "Kusta"]
 IMG_SIZE = (300, 300)
 THRESHOLD = 70  # dalam persen
 
-USER_NAME = "Abel Fadillah Mardianto"  # ganti sesuai kebutuhan demo
+USER_NAME = "Budi Santoso"  # ganti sesuai kebutuhan demo
 
 st.set_page_config(page_title="Lentera", page_icon="🩺", layout="wide")
 
@@ -70,7 +70,26 @@ st.markdown("""
             padding-right: 1rem;
         }
     }
-    .lentera-header {
+    .lentera-logo-badge {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 12px 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .lentera-logo-icon-wrap {
+        background: #ffffff;
+        border: 1px solid #e8ebf2;
+        border-radius: 14px;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
         background: linear-gradient(135deg, #3b5fe2, #5b7cf0);
         border-radius: 18px;
         padding: 20px;
@@ -254,14 +273,19 @@ def go_to(page_name):
 # HALAMAN: BERANDA
 # =========================================================
 def halaman_beranda():
-    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:95px; vertical-align:middle;">'
-                 if LOGO_B64 else "🌿")
+    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:120px; width:auto; display:block;">'
+                 if LOGO_B64 else '<span style="font-size:80px;">🌿</span>')
     st.markdown(f"""
+    <div class="lentera-logo-badge">
+        <div class="lentera-logo-icon-wrap">{logo_html}</div>
+        <div>
+            <div style="font-size:28px; font-weight:800; color:#2451e0; line-height:1.1;">LENTERA</div>
+            <div style="font-size:12px; color:#5b6b8c; font-weight:600;">Leprosy Early Recognition and Assessment</div>
+        </div>
+    </div>
     <div class="lentera-header">
-        <h2 style="margin:0;">{logo_html} LENTERA</h2>
         <p style="margin:4px 0 0 0;">Selamat datang kembali,</p>
         <h3 style="margin:0;">{USER_NAME} 👋</h3>
-        <p style="opacity:0.85; margin-top:4px;">Leprosy Early Recognition and Assessment</p>
     </div>
     """, unsafe_allow_html=True)
 

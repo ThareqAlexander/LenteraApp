@@ -275,7 +275,7 @@ def go_to(page_name):
 # =========================================================
 def halaman_beranda():
     # Dua ukuran ini independen — ubah salah satu tanpa mempengaruhi yang lain
-    LOGO_HEIGHT_PX = 50   # ukuran logo lentera
+    LOGO_HEIGHT_PX = 44   # ukuran logo lentera
     BADGE_HEIGHT_PX = 56  # ukuran tetap kotak putihnya (tidak ikut membesar)
 
     logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:{LOGO_HEIGHT_PX}px; width:auto; display:block;">'
@@ -285,13 +285,16 @@ def halaman_beranda():
         <div style="display:flex; align-items:center; justify-content:space-between;">
             <div style="background:#ffffff; border-radius:14px; height:{BADGE_HEIGHT_PX}px; padding:0 16px; display:flex; align-items:center; gap:10px; overflow:visible;">
                 {logo_html}
-                <span style="font-size:20px; font-weight:800; color:#2451e0;">LENTERA</span>
+                <div>
+                    <div style="font-size:20px; font-weight:800; color:#2451e0; line-height:1.1;">LENTERA</div>
+                    <div style="font-size:9px; color:#6b7a99; font-weight:600; line-height:1.2;">Leprosy Early Recognition and Assessment</div>
+                </div>
             </div>
             <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:20px;">🧑</div>
         </div>
-        <p style="opacity:0.85; margin:10px 0 0 0; font-size:13px;">Leprosy Early Recognition and Assessment</p>
-        <p style="margin:14px 0 0 0;">Selamat datang kembali,</p>
+        <p style="margin:20px 0 0 0;">Selamat datang kembali,</p>
         <p style="margin:0; font-size:20px; font-weight:800;">{USER_NAME} 👋</p>
+        <p style="opacity:0.85; margin:6px 0 0 0; font-size:15px;">Leprosy Early Recognition and Assessment</p>
     </div>
     """, unsafe_allow_html=True)
 

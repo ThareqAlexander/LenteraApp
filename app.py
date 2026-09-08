@@ -90,33 +90,17 @@ st.markdown("""
             padding-right: 1rem;
         }
     }
-    /* Paksa kolom (tombol quick-action, bottom nav, kamera/galeri) tetap sejajar,
-       jangan ikut aturan bawaan Streamlit yang men-stack kolom di layar sempit */
-    div[data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-        gap: 6px !important;
-        width: 100% !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        min-width: 0 !important;
-        width: 100% !important;
-        flex: 1 1 0 !important;
-    }
-    div[data-testid="stButton"] {
-        min-width: 0 !important;
-        width: 100% !important;
-    }
+    /* Tombol otomatis menyesuaikan lebar teksnya */
     div[data-testid="stButton"] button {
-        min-width: 0 !important;
-        width: 100% !important;
-        padding-left: 2px !important;
-        padding-right: 2px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        padding: 8px 2px;
+        border-radius: 12px;
     }
-    html, body, .stApp, .main,
-    div[data-testid="stAppViewContainer"],
-    div[data-testid="stMain"] {
+    html, body, .stApp, .main {
         overflow-x: hidden !important;
-        max-width: 100vw !important;
     }
     .lentera-logo-badge {
         background: #ffffff;
@@ -185,15 +169,6 @@ st.markdown("""
         }
     }
 
-    /* Tombol jangan wrap ke baris baru, teks disusutkan biar muat */
-    div[data-testid="stButton"] button {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 12px;
-        padding: 8px 2px;
-        border-radius: 12px;
-    }
 </style>
 """, unsafe_allow_html=True)
 

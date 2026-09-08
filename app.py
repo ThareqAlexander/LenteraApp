@@ -275,7 +275,7 @@ def go_to(page_name):
 # =========================================================
 def halaman_beranda():
     # Dua ukuran ini independen — ubah salah satu tanpa mempengaruhi yang lain
-    LOGO_HEIGHT_PX = 58   # ukuran logo lentera
+    LOGO_HEIGHT_PX = 50   # ukuran logo lentera
     BADGE_HEIGHT_PX = 56  # ukuran tetap kotak putihnya (tidak ikut membesar)
 
     logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:{LOGO_HEIGHT_PX}px; width:auto; display:block;">'

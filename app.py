@@ -71,12 +71,24 @@ st.markdown("""
 <style>
     .block-container {
         max-width: 430px;
+        width: 100%;
+        box-sizing: border-box;
         padding-top: 4.5rem;
         padding-bottom: 6rem;
         margin: auto;
         border-left: 1px solid #e5e7eb;
         border-right: 1px solid #e5e7eb;
         box-shadow: 0 0 24px rgba(0,0,0,0.06);
+    }
+    @media (max-width: 430px) {
+        .block-container {
+            max-width: 100vw;
+            border-left: none;
+            border-right: none;
+            box-shadow: none;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
     }
     /* Paksa kolom (tombol quick-action, bottom nav, kamera/galeri) tetap sejajar,
        jangan ikut aturan bawaan Streamlit yang men-stack kolom di layar sempit */
@@ -100,8 +112,11 @@ st.markdown("""
         padding-left: 2px !important;
         padding-right: 2px !important;
     }
-    html, body, .stApp, .main {
+    html, body, .stApp, .main,
+    div[data-testid="stAppViewContainer"],
+    div[data-testid="stMain"] {
         overflow-x: hidden !important;
+        max-width: 100vw !important;
     }
     .lentera-logo-badge {
         background: #ffffff;
@@ -158,7 +173,16 @@ st.markdown("""
     .badge-dark { background:#1f2937; color:#ffffff; padding:4px 10px; border-radius:20px; font-weight:600; font-size:12px; }
     div[data-testid="stBottomBlockContainer"] {
         max-width: 430px;
+        width: 100%;
+        box-sizing: border-box;
         margin: auto;
+    }
+    @media (max-width: 430px) {
+        div[data-testid="stBottomBlockContainer"] {
+            max-width: 100vw;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
     }
 
     /* Tombol jangan wrap ke baris baru, teks disusutkan biar muat */

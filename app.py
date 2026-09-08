@@ -274,13 +274,17 @@ def go_to(page_name):
 # HALAMAN: BERANDA
 # =========================================================
 def halaman_beranda():
-    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:50px; width:auto; display:block;">'
-                 if LOGO_B64 else '<span style="font-size:26px;">🌿</span>')
+    # Dua ukuran ini independen — ubah salah satu tanpa mempengaruhi yang lain
+    LOGO_HEIGHT_PX = 44   # ukuran logo lentera
+    BADGE_HEIGHT_PX = 56  # ukuran tetap kotak putihnya (tidak ikut membesar)
+
+    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:{LOGO_HEIGHT_PX}px; width:auto; display:block;">'
+                 if LOGO_B64 else f'<span style="font-size:{int(LOGO_HEIGHT_PX*0.7)}px;">🌿</span>')
     st.markdown(f"""
     <div class="lentera-header">
         <div style="display:flex; align-items:center; justify-content:space-between;">
-            <div style="background:#ffffff; border-radius:12px; padding:8px 14px; display:flex; align-items:center; gap:10px;">
-                <div style="display:flex; align-items:center;">{logo_html}</div>
+            <div style="background:#ffffff; border-radius:14px; height:{BADGE_HEIGHT_PX}px; padding:0 16px; display:flex; align-items:center; gap:10px; overflow:visible;">
+                {logo_html}
                 <span style="font-size:20px; font-weight:800; color:#2451e0;">LENTERA</span>
             </div>
             <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:20px;">🧑</div>

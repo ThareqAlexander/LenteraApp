@@ -36,7 +36,7 @@ CLASS_NAMES = ["Bukan kusta", "Kusta"]
 IMG_SIZE = (300, 300)
 THRESHOLD = 70  # dalam persen
 
-USER_NAME = "Budi Santoso"  # ganti sesuai kebutuhan demo
+USER_NAME = "Abel Fadillah Mardianto"  # ganti sesuai kebutuhan demo
 
 st.set_page_config(page_title="Lentera", page_icon="🩺", layout="wide")
 
@@ -254,7 +254,7 @@ def go_to(page_name):
 # HALAMAN: BERANDA
 # =========================================================
 def halaman_beranda():
-    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:85px; vertical-align:middle;">'
+    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:95px; vertical-align:middle;">'
                  if LOGO_B64 else "🌿")
     st.markdown(f"""
     <div class="lentera-header">

@@ -273,19 +273,20 @@ def go_to(page_name):
 # HALAMAN: BERANDA
 # =========================================================
 def halaman_beranda():
-    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:120px; width:auto; display:block;">'
-                 if LOGO_B64 else '<span style="font-size:80px;">🌿</span>')
+    logo_html = (f'<img src="data:image/png;base64,{LOGO_B64}" style="height:36px; width:auto; display:block;">'
+                 if LOGO_B64 else '<span style="font-size:26px;">🌿</span>')
     st.markdown(f"""
-    <div class="lentera-logo-badge">
-        <div class="lentera-logo-icon-wrap">{logo_html}</div>
-        <div>
-            <div style="font-size:28px; font-weight:800; color:#2451e0; line-height:1.1;">LENTERA</div>
-            <div style="font-size:12px; color:#5b6b8c; font-weight:600;">Leprosy Early Recognition and Assessment</div>
-        </div>
-    </div>
     <div class="lentera-header">
-        <p style="margin:4px 0 0 0;">Selamat datang kembali,</p>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="background:#ffffff; border-radius:10px; padding:4px 6px; display:flex; align-items:center;">{logo_html}</div>
+                <span style="font-size:22px; font-weight:800;">LENTERA</span>
+            </div>
+            <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:20px;">🧑</div>
+        </div>
+        <p style="margin:14px 0 0 0;">Selamat datang kembali,</p>
         <h3 style="margin:0;">{USER_NAME} 👋</h3>
+        <p style="opacity:0.85; margin-top:4px; font-size:13px;">Leprosy Early Recognition and Assessment</p>
     </div>
     """, unsafe_allow_html=True)
 

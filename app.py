@@ -201,6 +201,7 @@ def predict_image(pil_img, model):
 # VALIDASI FOTO — filter di luar model, sebelum prediksi
 # =========================================================
 MIN_SKIN_RATIO = 0.12  # minimal 12% piksel harus terdeteksi sebagai warna kulit
+MIN_BLUR_SCORE = 60    # ambang batas ketajaman foto (varians Laplacian)
 
 _face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
@@ -214,10 +215,16 @@ def hitung_rasio_kulit(cv_img):
     return float(np.sum(mask > 0)) / float(mask.size)
 
 
+def hitung_skor_blur(cv_img):
+    """Skor ketajaman foto pakai varians Laplacian. Semakin kecil = semakin buram."""
+    gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+    return cv2.Laplacian(gray, cv2.CV_64F).var()
+
+
 def validasi_foto(pil_img):
     """
     Mengembalikan (is_valid: bool, alasan: str).
-    Menolak foto yang mengandung wajah, atau yang rasio warna kulitnya terlalu rendah.
+    Menolak foto yang mengandung wajah, buram, atau rasio warna kulitnya terlalu rendah.
     """
     cv_img = cv2.cvtColor(np.array(pil_img.convert("RGB")), cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
@@ -225,6 +232,10 @@ def validasi_foto(pil_img):
     faces = _face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
     if len(faces) > 0:
         return False, "Terdeteksi wajah pada foto. Mohon unggah foto close-up area kulit yang ingin diperiksa, bukan foto wajah/selfie."
+
+    blur_score = hitung_skor_blur(cv_img)
+    if blur_score < MIN_BLUR_SCORE:
+        return False, "Foto terlalu buram/tidak fokus untuk dianalisis. Coba ambil foto ulang dengan pencahayaan cukup dan pastikan kamera fokus pada area kulit."
 
     skin_ratio = hitung_rasio_kulit(cv_img)
     if skin_ratio < MIN_SKIN_RATIO:

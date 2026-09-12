@@ -204,6 +204,7 @@ MIN_SKIN_RATIO = 0.12  # minimal 12% piksel harus terdeteksi sebagai warna kulit
 MIN_BLUR_SCORE = 60    # ambang batas ketajaman foto (varians Laplacian)
 
 _face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+_glasses_cascade = cv2.CascadeClassifier("haarcascade_eye_tree_eyeglasses.xml")
 
 
 def hitung_rasio_kulit(cv_img):
@@ -229,9 +230,9 @@ def validasi_foto(pil_img):
     cv_img = cv2.cvtColor(np.array(pil_img.convert("RGB")), cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
 
-    faces = _face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-    if len(faces) > 0:
-        return False, "Terdeteksi wajah pada foto. Mohon unggah foto close-up area kulit yang ingin diperiksa, bukan foto wajah/selfie."
+    glasses = _glasses_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
+    if len(glasses) > 0:
+        return False, "Terdeteksi kacamata pada foto, ciri khas foto selfie/formal. Mohon unggah foto close-up bersih pada permukaan kulit/wajah yang ingin diperiksa, tanpa aksesoris."
 
     blur_score = hitung_skor_blur(cv_img)
     if blur_score < MIN_BLUR_SCORE:

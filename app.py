@@ -19,7 +19,6 @@ from datetime import datetime
 
 import cv2
 import numpy as np
-import requests
 import streamlit as st
 from PIL import Image
 
@@ -487,49 +486,18 @@ def halaman_scan():
 
 
 # =========================================================
-# HALAMAN: FASKES (data RS Jawa Timur dari OpenStreetMap)
+# HALAMAN: FASKES (data faskes default — Surabaya)
 # =========================================================
-@st.cache_data(ttl=3600, show_spinner=False)
-def cari_faskes_jatim():
-    """Mengambil daftar RS di Jawa Timur dari OpenStreetMap (Overpass API).
-    Mengembalikan (hasil: list|None, error: str|None)."""
-    query = """
-    [out:json][timeout:50];
-    area["name"="Jawa Timur"]["admin_level"="4"]->.jatim;
-    (
-      node["amenity"="hospital"](area.jatim);
-      node["healthcare"="hospital"](area.jatim);
-    );
-    out center 300;
-    """
-    try:
-        resp = requests.post(
-            "https://overpass-api.de/api/interpreter",
-            data={"data": query},
-            timeout=50,
-        )
-        resp.raise_for_status()
-        elements = resp.json().get("elements", [])
-    except Exception as e:
-        return None, f"{type(e).__name__}: {e}"
-
-    hasil = []
-    seen = set()
-    for el in elements:
-        nama = el.get("tags", {}).get("name")
-        if not nama or nama in seen:
-            continue
-        seen.add(nama)
-        kota = (
-            el.get("tags", {}).get("addr:city")
-            or el.get("tags", {}).get("addr:district")
-            or el.get("tags", {}).get("addr:suburb")
-            or "-"
-        )
-        hasil.append({"nama": nama, "tipe": "Rumah Sakit", "kota": kota})
-
-    hasil.sort(key=lambda x: x["nama"])
-    return hasil, None
+FASKES_SURABAYA = [
+    {"nama": "RSUD Dr. Soetomo", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "RS Universitas Airlangga", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "RSU Haji Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "RS Islam Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "RS PHC Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "National Hospital Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "RS Siloam Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+    {"nama": "RS Premier Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
+]
 
 
 @st.dialog("🎫 Nomor Antrian Diterima")
@@ -543,53 +511,24 @@ def popup_nomor_antrian(nama_faskes):
 
 
 def halaman_faskes():
-    st.markdown("### 📍 Faskes di Jawa Timur")
-    st.caption("Data rumah sakit dari OpenStreetMap")
+    st.markdown("### 📍 Faskes Terdekat")
+    st.caption("Menampilkan faskes di sekitar Surabaya")
     kata_kunci = st.text_input("🔍 Cari nama faskes atau kota...")
-
-    # "belum_dicari" | "gagal" | "sukses" -> status pencarian faskes
-    if "faskes_status" not in st.session_state:
-        st.session_state.faskes_status = "belum_dicari"
-        st.session_state.faskes_jatim = []
-        st.session_state.faskes_error = ""
-
-    if st.session_state.faskes_status == "belum_dicari":
-        if st.button("🔍 Cari Faskes", use_container_width=True, type="primary"):
-            with st.spinner("Mengambil data rumah sakit se-Jawa Timur... (bisa sampai 1 menit)"):
-                hasil, error = cari_faskes_jatim()
-            if error:
-                st.session_state.faskes_status = "gagal"
-                st.session_state.faskes_error = error
-            else:
-                st.session_state.faskes_status = "sukses"
-                st.session_state.faskes_jatim = hasil
-            st.rerun()
-        return
-
-    if st.session_state.faskes_status == "gagal":
-        st.warning("Gagal mengambil data faskes dari OpenStreetMap.")
-        st.caption(f"Detail teknis: {st.session_state.faskes_error}")
-        if st.button("🔄 Coba lagi", use_container_width=True):
-            st.session_state.faskes_status = "belum_dicari"
-            st.rerun()
-        return
-
-    faskes_list = st.session_state.faskes_jatim
 
     if kata_kunci:
         tampil = [
-            f for f in faskes_list
+            f for f in FASKES_SURABAYA
             if kata_kunci.lower() in f["nama"].lower() or kata_kunci.lower() in f["kota"].lower()
         ]
     else:
-        tampil = faskes_list
+        tampil = FASKES_SURABAYA
 
-    st.caption(f"{len(tampil)} dari {len(faskes_list)} FASKES DITEMUKAN")
+    st.caption(f"{len(tampil)} FASKES DITEMUKAN")
 
     if len(tampil) == 0:
         st.info("Tidak ada faskes yang cocok dengan pencarian kamu.")
 
-    for i, f in enumerate(tampil[:50]):
+    for i, f in enumerate(tampil):
         st.markdown(f"""
         <div class="lentera-card">
             <b>{f['nama']}</b><br>
@@ -598,13 +537,6 @@ def halaman_faskes():
         """, unsafe_allow_html=True)
         if st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True):
             popup_nomor_antrian(f["nama"])
-
-    if len(tampil) > 50:
-        st.caption(f"Menampilkan 50 dari {len(tampil)} hasil. Persempit pencarian untuk melihat lainnya.")
-
-    if st.button("🔄 Muat ulang data faskes", use_container_width=True):
-        st.session_state.faskes_status = "belum_dicari"
-        st.rerun()
 
 
 # =========================================================

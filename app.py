@@ -28,7 +28,7 @@ from tensorflow.keras.applications import efficientnet
 # =========================================================
 # KONFIGURASI — SESUAIKAN BAGIAN INI
 # =========================================================
-ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras.zip"
+ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras"
 EXTRACT_PATH = "Model/extracted_semifinal"
 RIWAYAT_PATH = "riwayat.json"
 
@@ -200,28 +200,46 @@ def predict_image(pil_img, model):
 # =========================================================
 # VALIDASI FOTO — cek sederhana rasio warna kulit saja
 # =========================================================
-MIN_SKIN_RATIO = 0.12  # minimal 12% piksel harus terdeteksi sebagai warna kulit
+MIN_SKIN_BLOB_RATIO = 0.25  # area kulit tersambung terbesar minimal 25% dari foto
 
 
-def hitung_rasio_kulit(cv_img):
-    """Menghitung persentase piksel yang masuk rentang warna kulit manusia (YCrCb)."""
+def hitung_area_kulit_terbesar(cv_img):
+    """
+    Mencari area kulit TERSAMBUNG terbesar (bukan sekadar total piksel kulit).
+    Foto close-up kulit asli (tangan/wajah/kaki/badan) biasanya punya satu area
+    besar yang menyatu, sedangkan pemandangan/objek lain kalaupun warnanya mirip
+    kulit biasanya tersebar kecil-kecil dan tidak menyatu.
+    """
     ycrcb = cv2.cvtColor(cv_img, cv2.COLOR_BGR2YCrCb)
     lower = np.array([0, 133, 77], dtype=np.uint8)
     upper = np.array([255, 173, 127], dtype=np.uint8)
     mask = cv2.inRange(ycrcb, lower, upper)
-    return float(np.sum(mask > 0)) / float(mask.size)
+
+    # Bersihkan noise kecil biar area yang terhitung lebih representatif
+    kernel = np.ones((7, 7), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if num_labels <= 1:
+        return 0.0
+
+    # Label 0 itu background, jadi diabaikan; ambil komponen terbesar sisanya
+    areas = stats[1:, cv2.CC_STAT_AREA]
+    largest_area = int(areas.max()) if len(areas) > 0 else 0
+    return float(largest_area) / float(mask.size)
 
 
 def validasi_foto(pil_img):
     """
     Mengembalikan (is_valid: bool, alasan: str).
-    Menolak foto yang rasio warna kulitnya terlalu rendah (jelas bukan foto kulit/wajah,
-    misal pemandangan, barang, atau dokumen).
+    Menolak foto yang tidak punya area kulit tersambung yang cukup besar —
+    artinya foto tidak menunjukkan bagian tubuh (wajah/tangan/kaki/badan) dengan jelas.
     """
     cv_img = cv2.cvtColor(np.array(pil_img.convert("RGB")), cv2.COLOR_RGB2BGR)
-    skin_ratio = hitung_rasio_kulit(cv_img)
-    if skin_ratio < MIN_SKIN_RATIO:
-        return False, "Foto tidak menunjukkan area kulit yang jelas. Coba ambil foto lebih dekat dan pastikan pencahayaan cukup."
+    blob_ratio = hitung_area_kulit_terbesar(cv_img)
+    if blob_ratio < MIN_SKIN_BLOB_RATIO:
+        return False, "Foto tidak menunjukkan bagian kulit (wajah/tangan/kaki/badan) dengan jelas. Pastikan area kulit yang ingin diperiksa memenuhi sebagian besar bingkai foto."
     return True, ""
 
 

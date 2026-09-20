@@ -627,11 +627,23 @@ def halaman_riwayat():
     for entry in data:
         tier_label = entry.get("tier_label", entry.get("label", "-"))
         tier_class = entry.get("tier_class", entry.get("badge_class", "badge-rendah"))
+        hasil_label = entry.get("label", "-")  # "Kusta Terdeteksi" / "Tidak Terdeteksi" / "Input Tidak Valid"
+        kelas = entry.get("class", "-")
+        kelas_line = (
+            f'<p style="margin:6px 0 0 0; font-size:13px; color:#4b5563;">Kelas: <b>{kelas}</b></p>'
+            if kelas != "Tidak Valid" else ""
+        )
         st.markdown(f"""
         <div class="lentera-card">
-            <b>{entry.get('filename', '-')}</b>
-            <span class="{tier_class}" style="float:right;">{tier_label}</span><br>
-            <span style="color:#888; font-size:12px;">{entry.get('date', '-')}</span>
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                <b>{entry.get('filename', '-')}</b>
+                <span class="badge-dark" style="white-space:nowrap;">{hasil_label}</span>
+            </div>
+            {kelas_line}
+            <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="color:#888; font-size:12px;">{entry.get('date', '-')}</span>
+                <span class="{tier_class}">{tier_label}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 

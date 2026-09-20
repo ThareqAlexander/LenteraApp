@@ -366,7 +366,7 @@ def halaman_beranda():
             go_to("Riwayat")
             st.rerun()
 
-         st.markdown("### 📖 Apa itu Kusta?")
+            st.markdown("### 📖 Apa itu Kusta?")
 
     st.markdown(
         """

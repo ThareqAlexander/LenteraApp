@@ -14,11 +14,15 @@ import json
 import zipfile
 import hashlib
 import base64
+import math
+import random
 from datetime import datetime
 
 import cv2
 import numpy as np
+import requests
 import streamlit as st
+from streamlit_geolocation import streamlit_geolocation
 from PIL import Image
 
 import tensorflow as tf
@@ -487,29 +491,110 @@ def halaman_scan():
 # =========================================================
 # HALAMAN: FASKES (data contoh — belum terhubung API lokasi asli)
 # =========================================================
+def hitung_jarak_km(lat1, lon1, lat2, lon2):
+    """Jarak antara dua titik koordinat (rumus Haversine), hasil dalam km."""
+    R = 6371
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def cari_faskes_terdekat(lat, lon, radius_m=5000):
+    """Mengambil daftar RS/Puskesmas/Klinik terdekat dari OpenStreetMap (Overpass API)."""
+    query = f"""
+    [out:json][timeout:15];
+    (
+      node["amenity"="hospital"](around:{radius_m},{lat},{lon});
+      node["amenity"="clinic"](around:{radius_m},{lat},{lon});
+      node["healthcare"="hospital"](around:{radius_m},{lat},{lon});
+    );
+    out center;
+    """
+    try:
+        resp = requests.post(
+            "https://overpass-api.de/api/interpreter",
+            data={"data": query},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        elements = resp.json().get("elements", [])
+    except Exception:
+        return None  # gagal ambil data (offline/timeout/API sedang sibuk)
+
+    hasil = []
+    for el in elements:
+        nama = el.get("tags", {}).get("name")
+        if not nama:
+            continue
+        el_lat, el_lon = el.get("lat"), el.get("lon")
+        if el_lat is None or el_lon is None:
+            continue
+        jarak = hitung_jarak_km(lat, lon, el_lat, el_lon)
+        tipe = "Rumah Sakit" if el.get("tags", {}).get("amenity") in ("hospital",) or el.get("tags", {}).get("healthcare") == "hospital" else "Klinik"
+        hasil.append({"nama": nama, "tipe": tipe, "jarak_km": jarak})
+
+    hasil.sort(key=lambda x: x["jarak_km"])
+    return hasil[:8]
+
+
+@st.dialog("🎫 Nomor Antrian Diterima")
+def popup_nomor_antrian(nama_faskes):
+    nomor = random.randint(10, 99)
+    st.success(f"Nomor antrian Anda: **{nomor}**")
+    st.write(f"Segera menuju ke **{nama_faskes}** untuk melakukan pemeriksaan.")
+    st.caption("⚠️ Ini simulasi untuk keperluan demo. Nomor antrian sungguhan memerlukan integrasi sistem antrian resmi faskes.")
+    if st.button("Tutup", use_container_width=True):
+        st.rerun()
+
+
 def halaman_faskes():
     st.markdown("### 📍 Faskes Terdekat")
     st.caption("Berdasarkan lokasi Anda saat ini")
     st.text_input("🔍 Cari fasilitas kesehatan...")
 
-    faskes_dummy = [
-        {"nama": "RSUD Dr. H. Moh. Anwar", "tipe": "Rumah Sakit Umum", "jarak": "1.2 km", "status": "Buka"},
-        {"nama": "Puskesmas Kota Sumenep", "tipe": "Puskesmas", "jarak": "0.8 km", "status": "Buka"},
-        {"nama": "Klinik Pratama Sehat Sejahtera", "tipe": "Klinik Pratama", "jarak": "2.3 km", "status": "Tutup"},
-    ]
-    st.caption(f"{len(faskes_dummy)} FASKES DITEMUKAN (data contoh)")
-    for i, f in enumerate(faskes_dummy):
-        warna = "#1e9e5a" if f["status"] == "Buka" else "#d63d3d"
+    if "lokasi_user" not in st.session_state:
+        st.session_state.lokasi_user = None
+
+    if st.session_state.lokasi_user is None:
+        st.info("Aktifkan lokasi untuk menemukan faskes terdekat dari posisi Anda.")
+        lokasi = streamlit_geolocation()
+        if lokasi and lokasi.get("latitude") is not None:
+            st.session_state.lokasi_user = (lokasi["latitude"], lokasi["longitude"])
+            st.rerun()
+        return
+
+    lat, lon = st.session_state.lokasi_user
+
+    with st.spinner("Mencari faskes terdekat..."):
+        faskes_list = cari_faskes_terdekat(lat, lon)
+
+    if faskes_list is None:
+        st.warning("Gagal mengambil data faskes (koneksi/layanan peta sedang bermasalah). Coba lagi beberapa saat.")
+        if st.button("🔄 Coba lagi"):
+            st.rerun()
+        return
+
+    if len(faskes_list) == 0:
+        st.info("Tidak ditemukan faskes dalam radius 5 km dari lokasi Anda.")
+        return
+
+    st.caption(f"{len(faskes_list)} FASKES DITEMUKAN")
+    for i, f in enumerate(faskes_list):
         st.markdown(f"""
         <div class="lentera-card">
             <b>{f['nama']}</b><br>
-            <span style="color:#666; font-size:13px;">{f['tipe']} · {f['jarak']}</span><br>
-            <span style="color:{warna}; font-size:13px;">● {f['status']}</span>
+            <span style="color:#666; font-size:13px;">{f['tipe']} · {f['jarak_km']:.1f} km</span>
         </div>
         """, unsafe_allow_html=True)
-        if i == 1:
-            st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True)
-    st.caption("Catatan: data faskes di atas masih contoh statis. Untuk lokasi real-time dibutuhkan integrasi API peta (mis. Google Places).")
+        if st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True):
+            popup_nomor_antrian(f["nama"])
+
+    if st.button("📍 Perbarui lokasi", use_container_width=True):
+        st.session_state.lokasi_user = None
+        st.rerun()
 
 
 # =========================================================

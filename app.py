@@ -263,21 +263,21 @@ def keyakinan_tier(pred_conf):
 def rekomendasi_text(pred_class, pred_conf):
     if pred_class == "Bukan kusta":
         return (
-            "Tidak ditemukan indikasi kusta berdasarkan foto. "
+            "Tidak ditemukan indikasi adanya penyakit kusta. "
             "Tetap jaga kesehatan dan kebersihan kulit. "
             "Jika terdapat perubahan atau keluhan pada kulit, "
-            "tetap kunjungi dokter atau fasilitas kesehatan untuk pemeriksaan lebih lanjut."
+            "segera hubungi dokter atau fasilitas kesehatan untuk pemeriksaan lebih lanjut."
         )
 
     if pred_conf >= THRESHOLD:
         return (
-            "Kusta terindikasi kuat berdasarkan hasil deteksi foto. "
-            "Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat "
+            "Ditemukan indikasi kuat penyakit Kusta pada kulit. "
+            "Segera kunjungi dokter atau fasilitas kesehatan terdekat "
             "untuk mendapatkan pemeriksaan dan penanganan lebih lanjut."
         )
 
     return (
-        "Kusta terindikasi ringan berdasarkan hasil deteksi foto. "
+        "Ditemukan indikasi ringan penyakit Kusta pada kulit. "
         "Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat "
         "untuk melakukan pemeriksaan sensorik pada kulit dan pemeriksaan lebih lanjut."
     )

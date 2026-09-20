@@ -262,11 +262,25 @@ def keyakinan_tier(pred_conf):
 
 def rekomendasi_text(pred_class, pred_conf):
     if pred_class == "Bukan kusta":
-        return "Tidak ditemukan tanda-tanda kusta yang signifikan. Tetap jaga kebersihan kulit dan periksa ulang jika muncul perubahan."
-    if pred_conf >= THRESHOLD:
-        return "Terdapat indikasi kuat. Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat untuk pemeriksaan lebih lanjut."
-    return "Terdapat indikasi ringan. Pantau kondisi kulit selama 2-4 minggu. Kunjungi Puskesmas jika ada perubahan."
+        return (
+            "Tidak ditemukan indikasi kusta berdasarkan foto. "
+            "Tetap jaga kesehatan dan kebersihan kulit. "
+            "Jika terdapat perubahan atau keluhan pada kulit, "
+            "tetap kunjungi dokter atau fasilitas kesehatan untuk pemeriksaan lebih lanjut."
+        )
 
+    if pred_conf >= THRESHOLD:
+        return (
+            "Kusta terindikasi kuat berdasarkan hasil deteksi foto. "
+            "Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat "
+            "untuk mendapatkan pemeriksaan dan penanganan lebih lanjut."
+        )
+
+    return (
+        "Kusta terindikasi ringan berdasarkan hasil deteksi foto. "
+        "Segera kunjungi Puskesmas atau fasilitas kesehatan terdekat "
+        "untuk melakukan pemeriksaan sensorik pada kulit dan pemeriksaan lebih lanjut."
+    )
 
 # =========================================================
 # RIWAYAT (baca/tulis riwayat.json)

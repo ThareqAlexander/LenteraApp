@@ -27,7 +27,7 @@ from tensorflow.keras.applications import efficientnet
 # =========================================================
 # KONFIGURASI — SESUAIKAN BAGIAN INI
 # =========================================================
-ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras"
+ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras.zip"
 EXTRACT_PATH = "Model/extracted_semifinal"
 RIWAYAT_PATH = "riwayat.json"
 

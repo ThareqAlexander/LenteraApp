@@ -16,6 +16,7 @@ import hashlib
 import base64
 from datetime import datetime
 
+import cv2
 import numpy as np
 import streamlit as st
 from PIL import Image
@@ -196,6 +197,33 @@ def predict_image(pil_img, model):
     return CLASS_NAMES[top_idx], float(predictions[top_idx] * 100)
 
 
+# =========================================================
+# VALIDASI FOTO — cek sederhana rasio warna kulit saja
+# =========================================================
+MIN_SKIN_RATIO = 0.12  # minimal 12% piksel harus terdeteksi sebagai warna kulit
+
+
+def hitung_rasio_kulit(cv_img):
+    """Menghitung persentase piksel yang masuk rentang warna kulit manusia (YCrCb)."""
+    ycrcb = cv2.cvtColor(cv_img, cv2.COLOR_BGR2YCrCb)
+    lower = np.array([0, 133, 77], dtype=np.uint8)
+    upper = np.array([255, 173, 127], dtype=np.uint8)
+    mask = cv2.inRange(ycrcb, lower, upper)
+    return float(np.sum(mask > 0)) / float(mask.size)
+
+
+def validasi_foto(pil_img):
+    """
+    Mengembalikan (is_valid: bool, alasan: str).
+    Menolak foto yang rasio warna kulitnya terlalu rendah (jelas bukan foto kulit/wajah,
+    misal pemandangan, barang, atau dokumen).
+    """
+    cv_img = cv2.cvtColor(np.array(pil_img.convert("RGB")), cv2.COLOR_RGB2BGR)
+    skin_ratio = hitung_rasio_kulit(cv_img)
+    if skin_ratio < MIN_SKIN_RATIO:
+        return False, "Foto tidak menunjukkan area kulit yang jelas. Coba ambil foto lebih dekat dan pastikan pencahayaan cukup."
+    return True, ""
+
 
 def status_badge(pred_class):
     """Menampilkan status klasifikasi apa adanya (bukan penilaian tingkat risiko klinis)."""
@@ -374,26 +402,42 @@ def halaman_scan():
         st.session_state.scan_result = None
 
         if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
-            with st.spinner("Menganalisis..."):
-                model = load_model()
-                pred_class, pred_conf = predict_image(img_input, model)
+            is_valid, alasan = validasi_foto(img_input)
 
-            label, badge_class = status_badge(pred_class)
-            tier_label, tier_class = keyakinan_tier(pred_conf)
-            rekomendasi = rekomendasi_text(pred_class, pred_conf)
+            if not is_valid:
+                st.session_state.scan_result = {
+                    "filename": filename,
+                    "class": "Tidak Valid",
+                    "confidence": 0,
+                    "label": "Input Tidak Valid",
+                    "badge_class": "badge-abu",
+                    "tier_label": "Bukan Foto Kulit",
+                    "tier_class": "badge-abu",
+                    "rekomendasi": alasan,
+                    "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+                }
+                save_riwayat(st.session_state.scan_result)
+            else:
+                with st.spinner("Menganalisis..."):
+                    model = load_model()
+                    pred_class, pred_conf = predict_image(img_input, model)
 
-            st.session_state.scan_result = {
-                "filename": filename,
-                "class": pred_class,
-                "confidence": round(pred_conf, 2),
-                "label": label,
-                "badge_class": badge_class,
-                "tier_label": tier_label,
-                "tier_class": tier_class,
-                "rekomendasi": rekomendasi,
-                "date": datetime.now().strftime("%d %b %Y, %H:%M"),
-            }
-            save_riwayat(st.session_state.scan_result)
+                label, badge_class = status_badge(pred_class)
+                tier_label, tier_class = keyakinan_tier(pred_conf)
+                rekomendasi = rekomendasi_text(pred_class, pred_conf)
+
+                st.session_state.scan_result = {
+                    "filename": filename,
+                    "class": pred_class,
+                    "confidence": round(pred_conf, 2),
+                    "label": label,
+                    "badge_class": badge_class,
+                    "tier_label": tier_label,
+                    "tier_class": tier_class,
+                    "rekomendasi": rekomendasi,
+                    "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+                }
+                save_riwayat(st.session_state.scan_result)
 
             st.session_state.analyzed_image_id = current_image_id
             st.rerun()

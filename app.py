@@ -591,7 +591,7 @@ def halaman_faskes():
     for i, f in enumerate(tampil):
         is_fktp_terdaftar = f.get("terdaftar", False)
         badge_terdaftar = (
-            '<span class="badge-rendah" style="margin-top:6px; display:inline-block;">✅ FKTP Terdaftar Anda</span>'
+            '<span class="badge-rendah" style="margin-top:6px; display:inline-block;">✅ FKTP Terdaftar</span>'
             if is_fktp_terdaftar else ""
         )
         st.markdown(f"""
@@ -606,7 +606,7 @@ def halaman_faskes():
             if st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True):
                 popup_nomor_antrian(f["nama"])
         elif f["tipe"] == "Puskesmas":
-            st.caption("Bukan FKTP terdaftar Anda pada JKN — antrian online hanya tersedia di faskes tingkat pertama terdaftar.")
+            st.caption("Bukan FKTP terdaftar Anda pada JKN.")
         else:
             st.caption("Faskes rujukan (FKTL) — kunjungan memerlukan rujukan dari FKTP terdaftar Anda.")
 

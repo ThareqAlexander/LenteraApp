@@ -352,7 +352,7 @@ def halaman_beranda():
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns(3)
+      c1, c2, c3 = st.columns(3)
     with c1:
         if st.button("📷\nScan", use_container_width=True):
             go_to("Scan")
@@ -366,7 +366,7 @@ def halaman_beranda():
             go_to("Riwayat")
             st.rerun()
 
-            st.markdown("### 📖 Apa itu Kusta?")
+    st.markdown("### 📖 Apa itu Kusta?")
 
     st.markdown(
         """
@@ -419,29 +419,6 @@ def halaman_beranda():
         "Contoh lesi kulit pada kusta — Sumber: CDC Public Health Image Library "
         "(PHIL), Image ID 24455. Gambar digunakan sebagai media edukasi."
     )
-
-    st.markdown("""
-    <div class="lentera-card">
-        <b>🔎 Contoh Tanda pada Kulit</b>
-        <p style="margin-top:8px;">
-            Berikut merupakan contoh gambaran lesi kulit yang dapat ditemukan
-            pada kusta. Foto ini hanya digunakan sebagai informasi edukasi
-            dan tidak dapat digunakan untuk menentukan diagnosis.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.image(
-        "assets/leprosy_example.jpg",
-        use_container_width=True
-    )
-
-    st.caption(
-        "Contoh lesi kulit pada kusta — Sumber: CDC Public Health Image Library (PHIL), "
-        "Image ID 24455. Foto menunjukkan macula hipopigmentasi yang berhubungan "
-        "dengan kusta. Gambar berstatus public domain."
-    )
-
 
 # =========================================================
 # HALAMAN: SCAN (kamera langsung + upload)

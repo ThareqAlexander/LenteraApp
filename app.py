@@ -16,7 +16,6 @@ import hashlib
 import base64
 from datetime import datetime
 
-import cv2
 import numpy as np
 import streamlit as st
 from PIL import Image
@@ -28,7 +27,7 @@ from tensorflow.keras.applications import efficientnet
 # =========================================================
 # KONFIGURASI — SESUAIKAN BAGIAN INI
 # =========================================================
-ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras.zip"
+ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras"
 EXTRACT_PATH = "Model/extracted_semifinal"
 RIWAYAT_PATH = "riwayat.json"
 
@@ -196,42 +195,6 @@ def predict_image(pil_img, model):
     top_idx = int(np.argmax(predictions))
     return CLASS_NAMES[top_idx], float(predictions[top_idx] * 100)
 
-
-# =========================================================
-# VALIDASI FOTO — filter di luar model, sebelum prediksi
-# =========================================================
-MIN_SKIN_RATIO = 0.12  # minimal 12% piksel harus terdeteksi sebagai warna kulit
-
-_face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-_glasses_cascade = cv2.CascadeClassifier("haarcascade_eye_tree_eyeglasses.xml")
-
-
-def hitung_rasio_kulit(cv_img):
-    """Menghitung persentase piksel yang masuk rentang warna kulit manusia (YCrCb)."""
-    ycrcb = cv2.cvtColor(cv_img, cv2.COLOR_BGR2YCrCb)
-    lower = np.array([0, 133, 77], dtype=np.uint8)
-    upper = np.array([255, 173, 127], dtype=np.uint8)
-    mask = cv2.inRange(ycrcb, lower, upper)
-    return float(np.sum(mask > 0)) / float(mask.size)
-
-
-def validasi_foto(pil_img):
-    """
-    Mengembalikan (is_valid: bool, alasan: str).
-    Menolak foto yang mengandung kacamata, atau yang rasio warna kulitnya terlalu rendah.
-    """
-    cv_img = cv2.cvtColor(np.array(pil_img.convert("RGB")), cv2.COLOR_RGB2BGR)
-    gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-
-    glasses = _glasses_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-    if len(glasses) > 0:
-        return False, "Terdeteksi kacamata pada foto, ciri khas foto selfie/formal. Mohon unggah foto close-up bersih pada permukaan kulit/wajah yang ingin diperiksa, tanpa aksesoris."
-
-    skin_ratio = hitung_rasio_kulit(cv_img)
-    if skin_ratio < MIN_SKIN_RATIO:
-        return False, "Foto tidak menunjukkan area kulit yang jelas. Coba ambil foto lebih dekat dan pastikan pencahayaan cukup."
-
-    return True, ""
 
 
 def status_badge(pred_class):
@@ -411,42 +374,26 @@ def halaman_scan():
         st.session_state.scan_result = None
 
         if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
-            is_valid, alasan = validasi_foto(img_input)
+            with st.spinner("Menganalisis..."):
+                model = load_model()
+                pred_class, pred_conf = predict_image(img_input, model)
 
-            if not is_valid:
-                st.session_state.scan_result = {
-                    "filename": filename,
-                    "class": "Tidak Valid",
-                    "confidence": 0,
-                    "label": "Input Tidak Valid",
-                    "badge_class": "badge-abu",
-                    "tier_label": "Bukan Foto Kulit",
-                    "tier_class": "badge-abu",
-                    "rekomendasi": alasan,
-                    "date": datetime.now().strftime("%d %b %Y, %H:%M"),
-                }
-                save_riwayat(st.session_state.scan_result)
-            else:
-                with st.spinner("Menganalisis..."):
-                    model = load_model()
-                    pred_class, pred_conf = predict_image(img_input, model)
+            label, badge_class = status_badge(pred_class)
+            tier_label, tier_class = keyakinan_tier(pred_conf)
+            rekomendasi = rekomendasi_text(pred_class, pred_conf)
 
-                label, badge_class = status_badge(pred_class)
-                tier_label, tier_class = keyakinan_tier(pred_conf)
-                rekomendasi = rekomendasi_text(pred_class, pred_conf)
-
-                st.session_state.scan_result = {
-                    "filename": filename,
-                    "class": pred_class,
-                    "confidence": round(pred_conf, 2),
-                    "label": label,
-                    "badge_class": badge_class,
-                    "tier_label": tier_label,
-                    "tier_class": tier_class,
-                    "rekomendasi": rekomendasi,
-                    "date": datetime.now().strftime("%d %b %Y, %H:%M"),
-                }
-                save_riwayat(st.session_state.scan_result)
+            st.session_state.scan_result = {
+                "filename": filename,
+                "class": pred_class,
+                "confidence": round(pred_conf, 2),
+                "label": label,
+                "badge_class": badge_class,
+                "tier_label": tier_label,
+                "tier_class": tier_class,
+                "rekomendasi": rekomendasi,
+                "date": datetime.now().strftime("%d %b %Y, %H:%M"),
+            }
+            save_riwayat(st.session_state.scan_result)
 
             st.session_state.analyzed_image_id = current_image_id
             st.rerun()

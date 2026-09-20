@@ -28,8 +28,8 @@ from tensorflow.keras.applications import efficientnet
 # =========================================================
 # KONFIGURASI — SESUAIKAN BAGIAN INI
 # =========================================================
-ZIP_PATH = "Model/MODEL.OLD.zip"
-EXTRACT_PATH = "Model/extracted"
+ZIP_PATH = "Model/EfficientNetB3 (SEMIFINAL).keras"
+EXTRACT_PATH = "Model/extracted_semifinal"
 RIWAYAT_PATH = "riwayat.json"
 
 CLASS_NAMES = ["Bukan kusta", "Kusta"]

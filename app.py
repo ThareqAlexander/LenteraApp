@@ -535,7 +535,7 @@ def halaman_scan():
             <b>✅ Rekomendasi</b>
             <p style="margin-top:6px;">{r['rekomendasi']}</p>
         </div>
-        <p style="font-size:12px; color:#9ca3af;">⚠️ Hasil ini adalah estimasi berbasis AI, bukan diagnosis medis. Selalu konsultasikan ke tenaga kesehatan untuk kepastian.</p>
+        <p style="font-size:12px; color:#9ca3af;">⚠️ Hasil ini merupakan alat bantu skrining awal, bukan diagnosis medis. Segera hubungi atau kunjungi dokter maupun fasilitas kesehatan terdekat untuk pemeriksaan dan kepastian lebih lanjut.</p>
         """, unsafe_allow_html=True)
 
 
@@ -543,6 +543,13 @@ def halaman_scan():
 # HALAMAN: FASKES (data faskes default — Surabaya)
 # =========================================================
 FASKES_SURABAYA = [
+    # --- Puskesmas (FKTP / Faskes Tingkat Pertama) ---
+    {"nama": "Puskesmas Mulyorejo", "tipe": "Puskesmas", "kota": "Surabaya", "terdaftar": True},
+    {"nama": "Puskesmas Klampis Ngasem", "tipe": "Puskesmas", "kota": "Surabaya"},
+    {"nama": "Puskesmas Jagir", "tipe": "Puskesmas", "kota": "Surabaya"},
+    {"nama": "Puskesmas Tanah Kalikedinding", "tipe": "Puskesmas", "kota": "Surabaya"},
+    {"nama": "Puskesmas Dupak", "tipe": "Puskesmas", "kota": "Surabaya"},
+    # --- Rumah Sakit (FKTL / Faskes Rujukan Tingkat Lanjut) ---
     {"nama": "RSUD Dr. Soetomo", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
     {"nama": "RS Universitas Airlangga", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
     {"nama": "RSU Haji Surabaya", "tipe": "Rumah Sakit Umum", "kota": "Surabaya"},
@@ -582,14 +589,26 @@ def halaman_faskes():
         st.info("Tidak ada faskes yang cocok dengan pencarian kamu.")
 
     for i, f in enumerate(tampil):
+        is_fktp_terdaftar = f.get("terdaftar", False)
+        badge_terdaftar = (
+            '<span class="badge-rendah" style="margin-top:6px; display:inline-block;">✅ FKTP Terdaftar Anda</span>'
+            if is_fktp_terdaftar else ""
+        )
         st.markdown(f"""
         <div class="lentera-card">
             <b>{f['nama']}</b><br>
-            <span style="color:#666; font-size:13px;">{f['tipe']} · {f['kota']}</span>
+            <span style="color:#666; font-size:13px;">{f['tipe']} · {f['kota']}</span><br>
+            {badge_terdaftar}
         </div>
         """, unsafe_allow_html=True)
-        if st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True):
-            popup_nomor_antrian(f["nama"])
+
+        if is_fktp_terdaftar:
+            if st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True):
+                popup_nomor_antrian(f["nama"])
+        elif f["tipe"] == "Puskesmas":
+            st.caption("Bukan FKTP terdaftar Anda pada JKN — antrian online hanya tersedia di faskes tingkat pertama terdaftar.")
+        else:
+            st.caption("Faskes rujukan (FKTL) — kunjungan memerlukan rujukan dari FKTP terdaftar Anda.")
 
 
 # =========================================================

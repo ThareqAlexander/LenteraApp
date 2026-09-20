@@ -606,9 +606,9 @@ def halaman_faskes():
             if st.button("🎫 Ambil Nomor Antrian", key=f"antrian_{i}", use_container_width=True):
                 popup_nomor_antrian(f["nama"])
         elif f["tipe"] == "Puskesmas":
-            st.caption("Bukan FKTP terdaftar Anda pada JKN.")
+            st.caption("Bukan FKTP terdaftar pada JKN.")
         else:
-            st.caption("Faskes rujukan (FKTL) — kunjungan memerlukan rujukan dari FKTP terdaftar Anda.")
+            st.caption("Faskes rujukan (FKTL) — kunjungan memerlukan rujukan dari FKTP terdaftar.")
 
 
 # =========================================================

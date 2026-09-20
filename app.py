@@ -352,7 +352,7 @@ def halaman_beranda():
     </div>
     """, unsafe_allow_html=True)
 
-      c1, c2, c3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
     with c1:
         if st.button("📷\nScan", use_container_width=True):
             go_to("Scan")

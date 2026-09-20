@@ -505,7 +505,6 @@ def popup_nomor_antrian(nama_faskes):
     nomor = random.randint(10, 99)
     st.success(f"Nomor antrian Anda: **{nomor}**")
     st.write(f"Segera menuju ke **{nama_faskes}** untuk melakukan pemeriksaan.")
-    st.caption("⚠️ Ini simulasi untuk keperluan demo. Nomor antrian sungguhan memerlukan integrasi sistem antrian resmi faskes.")
     if st.button("Tutup", use_container_width=True):
         st.rerun()
 

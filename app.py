@@ -366,18 +366,79 @@ def halaman_beranda():
             go_to("Riwayat")
             st.rerun()
 
-    st.markdown("""
+        st.markdown("""
     <div class="lentera-card">
         <b>📖 Apa itu Kusta?</b>
-        <p style="margin-top:8px;">Penyakit infeksi kronis akibat bakteri <i>Mycobacterium leprae</i>
-        yang menyerang kulit dan saraf tepi.</p>
+
+        <p style="margin-top:8px;">
+            Kusta atau penyakit Hansen adalah penyakit infeksi kronis yang
+            terutama disebabkan oleh bakteri <i>Mycobacterium leprae</i>.
+            Penyakit ini terutama menyerang kulit dan saraf tepi, tetapi juga
+            dapat memengaruhi mata serta saluran pernapasan bagian atas.
+        </p>
+
+        <p>
+            Salah satu tanda yang perlu diperhatikan adalah munculnya bercak
+            pada kulit yang tampak lebih pucat atau kemerahan dan disertai
+            berkurangnya atau hilangnya sensasi. Pada beberapa kasus,
+            kusta juga dapat menyebabkan penebalan saraf, kelemahan otot,
+            atau gangguan sensasi pada tangan dan kaki.
+        </p>
+
         <ul>
-            <li>Penularan melalui kontak erat jangka panjang</li>
-            <li>Tanda awal: bercak pucat/mati rasa pada kulit</li>
-            <li>Dapat disembuhkan dengan MDT (Multi Drug Therapy) sejak dini</li>
+            <li>
+                <b>Penyebab:</b> bakteri <i>Mycobacterium leprae</i>
+            </li>
+            <li>
+                <b>Tanda yang perlu diperhatikan:</b> bercak pucat/kemerahan
+                disertai berkurangnya sensasi pada kulit
+            </li>
+            <li>
+                <b>Penularan:</b> terutama melalui droplet dari hidung dan
+                mulut dalam kontak yang dekat dan sering dengan penderita
+                yang belum mendapatkan pengobatan
+            </li>
+            <li>
+                <b>Pengobatan:</b> kusta dapat disembuhkan dengan
+                multidrug therapy (MDT)
+            </li>
+            <li>
+                <b>Deteksi dini:</b> pemeriksaan dan pengobatan sejak dini
+                dapat membantu mencegah terjadinya kecacatan
+            </li>
         </ul>
+
+        <p style="margin-top:12px;">
+            <a href="https://www.who.int/news-room/fact-sheets/detail/leprosy"
+               target="_blank"
+               style="color:#3b5fe2; font-weight:700; text-decoration:none;">
+                🔗 Pelajari lebih lanjut mengenai kusta →
+            </a>
+        </p>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="lentera-card">
+        <b>🔎 Contoh Tanda pada Kulit</b>
+        <p style="margin-top:8px;">
+            Berikut merupakan contoh gambaran lesi kulit yang dapat ditemukan
+            pada kusta. Foto ini hanya digunakan sebagai informasi edukasi
+            dan tidak dapat digunakan untuk menentukan diagnosis.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.image(
+        "assets/leprosy_example.jpg",
+        use_container_width=True
+    )
+
+    st.caption(
+        "Contoh lesi kulit pada kusta — Sumber: CDC Public Health Image Library (PHIL), "
+        "Image ID 24455. Foto menunjukkan macula hipopigmentasi yang berhubungan "
+        "dengan kusta. Gambar berstatus public domain."
+    )
 
 
 # =========================================================

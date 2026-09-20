@@ -487,13 +487,14 @@ def halaman_scan():
 
 
 # =========================================================
-# HALAMAN: FASKES (data contoh — belum terhubung API lokasi asli)
+# HALAMAN: FASKES (data RS Jawa Timur dari OpenStreetMap)
 # =========================================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def cari_faskes_jatim():
-    """Mengambil daftar RS di Jawa Timur dari OpenStreetMap (Overpass API)."""
+    """Mengambil daftar RS di Jawa Timur dari OpenStreetMap (Overpass API).
+    Mengembalikan (hasil: list|None, error: str|None)."""
     query = """
-    [out:json][timeout:25];
+    [out:json][timeout:50];
     area["name"="Jawa Timur"]["admin_level"="4"]->.jatim;
     (
       node["amenity"="hospital"](area.jatim);
@@ -505,12 +506,12 @@ def cari_faskes_jatim():
         resp = requests.post(
             "https://overpass-api.de/api/interpreter",
             data={"data": query},
-            timeout=25,
+            timeout=50,
         )
         resp.raise_for_status()
         elements = resp.json().get("elements", [])
-    except Exception:
-        return None  # gagal ambil data (offline/timeout/API sedang sibuk)
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
 
     hasil = []
     seen = set()
@@ -528,7 +529,7 @@ def cari_faskes_jatim():
         hasil.append({"nama": nama, "tipe": "Rumah Sakit", "kota": kota})
 
     hasil.sort(key=lambda x: x["nama"])
-    return hasil
+    return hasil, None
 
 
 @st.dialog("🎫 Nomor Antrian Diterima")
@@ -546,24 +547,34 @@ def halaman_faskes():
     st.caption("Data rumah sakit dari OpenStreetMap")
     kata_kunci = st.text_input("🔍 Cari nama faskes atau kota...")
 
-    if "faskes_jatim" not in st.session_state:
-        st.session_state.faskes_jatim = None
+    # "belum_dicari" | "gagal" | "sukses" -> status pencarian faskes
+    if "faskes_status" not in st.session_state:
+        st.session_state.faskes_status = "belum_dicari"
+        st.session_state.faskes_jatim = []
+        st.session_state.faskes_error = ""
 
-    if st.session_state.faskes_jatim is None:
+    if st.session_state.faskes_status == "belum_dicari":
         if st.button("🔍 Cari Faskes", use_container_width=True, type="primary"):
-            with st.spinner("Mengambil data rumah sakit se-Jawa Timur..."):
-                st.session_state.faskes_jatim = cari_faskes_jatim()
+            with st.spinner("Mengambil data rumah sakit se-Jawa Timur... (bisa sampai 1 menit)"):
+                hasil, error = cari_faskes_jatim()
+            if error:
+                st.session_state.faskes_status = "gagal"
+                st.session_state.faskes_error = error
+            else:
+                st.session_state.faskes_status = "sukses"
+                st.session_state.faskes_jatim = hasil
+            st.rerun()
+        return
+
+    if st.session_state.faskes_status == "gagal":
+        st.warning("Gagal mengambil data faskes dari OpenStreetMap.")
+        st.caption(f"Detail teknis: {st.session_state.faskes_error}")
+        if st.button("🔄 Coba lagi", use_container_width=True):
+            st.session_state.faskes_status = "belum_dicari"
             st.rerun()
         return
 
     faskes_list = st.session_state.faskes_jatim
-
-    if faskes_list is None:
-        st.warning("Gagal mengambil data faskes (koneksi/layanan peta sedang bermasalah).")
-        if st.button("🔄 Coba lagi", use_container_width=True):
-            st.session_state.faskes_jatim = None
-            st.rerun()
-        return
 
     if kata_kunci:
         tampil = [
@@ -592,7 +603,7 @@ def halaman_faskes():
         st.caption(f"Menampilkan 50 dari {len(tampil)} hasil. Persempit pencarian untuk melihat lainnya.")
 
     if st.button("🔄 Muat ulang data faskes", use_container_width=True):
-        st.session_state.faskes_jatim = None
+        st.session_state.faskes_status = "belum_dicari"
         st.rerun()
 
 

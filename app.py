@@ -497,11 +497,11 @@ def halaman_scan():
 
     # Tampilkan preview tambahan hanya untuk gambar dari galeri.
     if st.session_state.scan_mode == "Dari Galeri":
-        st.image(
-            np.asarray(img_input.convert("RGB")),
-            caption=filename,
-            use_container_width=True
-        )
+    st.image(
+        img_bytes,
+        caption=filename,
+        use_container_width=True
+    )
 
     # Bagian analisis berlaku untuk mode kamera maupun galeri.
     if not sudah_dianalisis:
@@ -682,28 +682,48 @@ def halaman_riwayat():
             st.session_state.confirm_hapus = True
             st.rerun()
 
+    
     for entry in data:
-        tier_label = entry.get("tier_label", entry.get("label", "-"))
-        tier_class = entry.get("tier_class", entry.get("badge_class", "badge-rendah"))
-        hasil_label = entry.get("label", "-")  # "Kusta Terdeteksi" / "Tidak Terdeteksi" / "Input Tidak Valid"
-        kelas = entry.get("class", "-")
-        kelas_line = (
-            f'<p style="margin:6px 0 0 0; font-size:13px; color:#4b5563;">Kelas: <b>{kelas}</b></p>'
-            if kelas != "Tidak Valid" else ""
+        tier_label = entry.get(
+            "tier_label",
+            entry.get("label", "-")
         )
-        st.markdown(f"""
-        <div class="lentera-card">
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
-                <b>{entry.get('filename', '-')}</b>
-                <span class="badge-dark" style="white-space:nowrap;">{hasil_label}</span>
-            </div>
-            {kelas_line}
-            <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between;">
-                <span style="color:#888; font-size:12px;">{entry.get('date', '-')}</span>
-                <span class="{tier_class}">{tier_label}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        tier_class = entry.get(
+            "tier_class",
+            entry.get("badge_class", "badge-rendah")
+        )
+        hasil_label = entry.get("label", "-")
+        kelas = entry.get("class", "-")
+
+        kelas_html = (
+            f'<p style="margin:6px 0 0 0; font-size:13px; '
+            f'color:#4b5563;">Kelas: <b>{kelas}</b></p>'
+            if kelas != "Tidak Valid"
+            else ""
+        )
+
+        # Susun HTML tanpa baris kosong di antara elemen.
+        # Ini mencegah Markdown membacanya sebagai blok kode.
+        card_html = (
+            '<div class="lentera-card">'
+            '<div style="display:flex; align-items:flex-start; '
+            'justify-content:space-between; gap:8px;">'
+            f'<b>{entry.get("filename", "-")}</b>'
+            f'<span class="badge-dark" style="white-space:nowrap;">'
+            f'{hasil_label}</span>'
+            '</div>'
+            f'{kelas_html}'
+            '<div style="margin-top:8px; display:flex; '
+            'align-items:center; justify-content:space-between;">'
+            f'<span style="color:#888; font-size:12px;">'
+            f'{entry.get("date", "-")}</span>'
+            f'<span class="{tier_class}">{tier_label}</span>'
+            '</div>'
+            '</div>'
+        )
+
+        st.markdown(card_html, unsafe_allow_html=True)
+
 
 
 # =========================================================

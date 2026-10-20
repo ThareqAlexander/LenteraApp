@@ -8,7 +8,7 @@ Cara menjalankan:
     pip install -r requirements.txt
     streamlit run app.py
 """
-
+import io
 import os
 import json
 import zipfile
@@ -442,22 +442,46 @@ def halaman_scan():
             st.session_state.scan_mode = "Dari Galeri"
             st.rerun()
 
+   
     img_input = None
     filename = None
     img_bytes = None
 
     if st.session_state.scan_mode == "Buka Kamera":
-        cam_result = st.camera_input("Arahkan kamera ke area kulit yang ingin diperiksa", label_visibility="collapsed")
+        cam_result = st.camera_input(
+            "Arahkan kamera ke area kulit yang ingin diperiksa",
+            label_visibility="collapsed"
+        )
+
         if cam_result is not None:
             img_bytes = cam_result.getvalue()
-            img_input = Image.open(cam_result)
-            filename = f"scan_kamera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            filename = (
+                f"scan_kamera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            )
+
     else:
-        uploaded_file = st.file_uploader("Pilih gambar dari galeri", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+        uploaded_file = st.file_uploader(
+            "Pilih gambar dari galeri",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="collapsed"
+        )
+
         if uploaded_file is not None:
             img_bytes = uploaded_file.getvalue()
-            img_input = Image.open(uploaded_file)
             filename = uploaded_file.name
+
+    # Baca gambar dari bytes dan konversi ke RGB
+    if img_bytes is not None:
+        try:
+            img_input = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+            img_input.load()
+        except (OSError, ValueError):
+            st.error(
+                "Gambar tidak dapat dibaca. "
+                "Coba gunakan file JPG atau PNG yang lain."
+            )
+            return
+
 
     # Foto di-clear / belum ada foto -> reset hasil sebelumnya
     if img_input is None:
@@ -468,7 +492,11 @@ def halaman_scan():
     current_image_id = hashlib.md5(img_bytes).hexdigest()
     sudah_dianalisis = st.session_state.get("analyzed_image_id") == current_image_id
     if st.session_state.scan_mode == "Dari Galeri":
-      st.image(img_input, use_container_width=True)
+    st.image(
+        np.asarray(img_input.convert("RGB")),
+        caption=filename,
+        use_container_width=True
+    )
     if not sudah_dianalisis:
         # Foto baru / belum dianalisis -> hasil lama (kalau ada) disembunyikan dulu
         st.session_state.scan_result = None

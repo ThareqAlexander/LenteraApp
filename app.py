@@ -490,19 +490,18 @@ def halaman_scan():
         return
 
    
-    current_image_id = hashlib.md5(img_bytes).hexdigest()
+        current_image_id = hashlib.md5(img_bytes).hexdigest()
     sudah_dianalisis = (
         st.session_state.get("analyzed_image_id") == current_image_id
     )
 
-    # Tampilkan preview tambahan hanya untuk gambar dari galeri.
+    # Tampilkan preview tambahan untuk gambar dari galeri.
     if st.session_state.scan_mode == "Dari Galeri":
-    st.image(
-        img_bytes,
-        caption=filename,
-        use_container_width=True
-    )
-
+        st.image(
+            img_bytes,
+            caption=filename,
+            use_container_width=True
+        )
     # Bagian analisis berlaku untuk mode kamera maupun galeri.
     if not sudah_dianalisis:
         # Sembunyikan hasil lama saat gambar belum dianalisis.

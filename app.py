@@ -489,19 +489,30 @@ def halaman_scan():
         st.session_state.analyzed_image_id = None
         return
 
+   
     current_image_id = hashlib.md5(img_bytes).hexdigest()
-    sudah_dianalisis = st.session_state.get("analyzed_image_id") == current_image_id
-if st.session_state.scan_mode == "Dari Galeri":
-    st.image(
-        np.asarray(img_input.convert("RGB")),
-        caption=filename,
-        use_container_width=True
+    sudah_dianalisis = (
+        st.session_state.get("analyzed_image_id") == current_image_id
     )
+
+    # Tampilkan preview tambahan hanya untuk gambar dari galeri.
+    if st.session_state.scan_mode == "Dari Galeri":
+        st.image(
+            np.asarray(img_input.convert("RGB")),
+            caption=filename,
+            use_container_width=True
+        )
+
+    # Bagian analisis berlaku untuk mode kamera maupun galeri.
     if not sudah_dianalisis:
-        # Foto baru / belum dianalisis -> hasil lama (kalau ada) disembunyikan dulu
+        # Sembunyikan hasil lama saat gambar belum dianalisis.
         st.session_state.scan_result = None
 
-        if st.button("🔍 Analisis Gambar", use_container_width=True, type="primary"):
+        if st.button(
+            "🔍 Analisis Gambar",
+            use_container_width=True,
+            type="primary"
+        ):
             is_valid, alasan = validasi_foto(img_input)
 
             if not is_valid:
@@ -517,6 +528,7 @@ if st.session_state.scan_mode == "Dari Galeri":
                     "date": datetime.now().strftime("%d %b %Y, %H:%M"),
                 }
                 save_riwayat(st.session_state.scan_result)
+
             else:
                 with st.spinner("Menganalisis..."):
                     model = load_model()

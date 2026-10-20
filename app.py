@@ -201,7 +201,7 @@ def predict_image(pil_img, model):
 # =========================================================
 # VALIDASI FOTO — cek sederhana rasio warna kulit saja
 # =========================================================
-MIN_SKIN_BLOB_RATIO = 0.25  # area kulit tersambung terbesar minimal 25% dari foto
+MIN_SKIN_BLOB_RATIO = 0.12  # area kulit tersambung terbesar minimal 25% dari foto
 
 
 def hitung_area_kulit_terbesar(cv_img):
@@ -212,8 +212,8 @@ def hitung_area_kulit_terbesar(cv_img):
     kulit biasanya tersebar kecil-kecil dan tidak menyatu.
     """
     ycrcb = cv2.cvtColor(cv_img, cv2.COLOR_BGR2YCrCb)
-    lower = np.array([0, 133, 77], dtype=np.uint8)
-    upper = np.array([255, 173, 127], dtype=np.uint8)
+    lower = np.array([0, 125, 65], dtype=np.uint8)
+    upper = np.array([255, 180, 140], dtype=np.uint8)
     mask = cv2.inRange(ycrcb, lower, upper)
 
     # Bersihkan noise kecil biar area yang terhitung lebih representatif
@@ -468,7 +468,8 @@ def halaman_scan():
     current_image_id = hashlib.md5(img_bytes).hexdigest()
     sudah_dianalisis = st.session_state.get("analyzed_image_id") == current_image_id
 
-    st.image(img_input, use_container_width=True)
+  if st.session_state.scan_mode == "Dari Galeri":
+      st.image(img_input, use_container_width=True)
 
     if not sudah_dianalisis:
         # Foto baru / belum dianalisis -> hasil lama (kalau ada) disembunyikan dulu

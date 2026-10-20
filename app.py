@@ -484,27 +484,28 @@ def halaman_scan():
 
 
     # Foto di-clear / belum ada foto -> reset hasil sebelumnya
-    if img_input is None:
+    
+    # Reset jika foto belum tersedia
+    if img_input is None or img_bytes is None:
         st.session_state.scan_result = None
         st.session_state.analyzed_image_id = None
         return
 
-   
-        current_image_id = hashlib.md5(img_bytes).hexdigest()
-    sudah_dianalisis = (
-        st.session_state.get("analyzed_image_id") == current_image_id
-    )
+    # Pastikan identitas gambar dihitung sebelum digunakan
+    current_image_id = hashlib.md5(img_bytes).hexdigest()
+    previous_image_id = st.session_state.get("analyzed_image_id")
+    sudah_dianalisis = previous_image_id == current_image_id
 
-    # Tampilkan preview tambahan untuk gambar dari galeri.
+    # Preview tambahan hanya untuk gambar yang diunggah dari galeri
     if st.session_state.scan_mode == "Dari Galeri":
         st.image(
             img_bytes,
             caption=filename,
             use_container_width=True
         )
-    # Bagian analisis berlaku untuk mode kamera maupun galeri.
+
+    # Proses analisis berlaku untuk kamera maupun galeri
     if not sudah_dianalisis:
-        # Sembunyikan hasil lama saat gambar belum dianalisis.
         st.session_state.scan_result = None
 
         if st.button(
@@ -526,8 +527,6 @@ def halaman_scan():
                     "rekomendasi": alasan,
                     "date": datetime.now().strftime("%d %b %Y, %H:%M"),
                 }
-                save_riwayat(st.session_state.scan_result)
-
             else:
                 with st.spinner("Menganalisis..."):
                     model = load_model()
@@ -548,7 +547,9 @@ def halaman_scan():
                     "rekomendasi": rekomendasi,
                     "date": datetime.now().strftime("%d %b %Y, %H:%M"),
                 }
-                save_riwayat(st.session_state.scan_result)
+
+            # Simpan hasil yang valid maupun input yang ditolak ke riwayat
+            save_riwayat(st.session_state.scan_result)
 
             st.session_state.analyzed_image_id = current_image_id
             st.rerun()

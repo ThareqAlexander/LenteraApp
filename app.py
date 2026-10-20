@@ -467,10 +467,8 @@ def halaman_scan():
 
     current_image_id = hashlib.md5(img_bytes).hexdigest()
     sudah_dianalisis = st.session_state.get("analyzed_image_id") == current_image_id
-
-  if st.session_state.scan_mode == "Dari Galeri":
+    if st.session_state.scan_mode == "Dari Galeri":
       st.image(img_input, use_container_width=True)
-
     if not sudah_dianalisis:
         # Foto baru / belum dianalisis -> hasil lama (kalau ada) disembunyikan dulu
         st.session_state.scan_result = None
